@@ -7,6 +7,8 @@ const JUMP_VELOCITY: float = -260.0
 const GRAVITY: float = 900.0
 const BODY_HALF_HEIGHT: float = 10.0
 
+@onready var _camera: Camera2D = $Camera2D
+
 
 func _physics_process(delta: float) -> void:
 	if not is_on_floor():
@@ -25,6 +27,11 @@ func tile_coordinate() -> Vector2i:
 static func spawn_position(spawn_tile: Vector2i) -> Vector2:
 	var floor_clearance: float = BODY_HALF_HEIGHT - float(WorldConfig.TILE_SIZE_PIXELS) / 2.0
 	return COORDINATES.tile_to_world_center(spawn_tile) - Vector2(0, floor_clearance)
+
+
+func reset_camera_smoothing() -> void:
+	_camera.reset_smoothing()
+	_camera.force_update_scroll()
 
 
 func occupied_tiles() -> Array[Vector2i]:

@@ -91,6 +91,54 @@ func test_player_spawns_at_the_canonical_tile_center_and_settles_in_spawn_tile()
 	)
 
 
+func test_hard_spawn_and_load_snap_camera_before_weather_uses_the_view() -> void:
+	var path := "user://sandbox-camera-sync-integration.json"
+	_remove_test_save(path)
+	var scene_instance: SandboxMain = MAIN_SCENE.instantiate()
+	add_child_autofree(scene_instance)
+	await get_tree().process_frame
+	var player: SandboxPlayer = scene_instance.get_node("Player")
+	var camera: Camera2D = player.get_node("Camera2D")
+	var weather_view := _weather_view(scene_instance)
+
+	assert_lt(camera.get_screen_center_position().distance_to(player.global_position), 1.0)
+	assert_true(
+		weather_view.last_canvas_transform.is_equal_approx(get_viewport().get_canvas_transform())
+	)
+	assert_true(scene_instance.save_world(path))
+	player.global_position += Vector2(160, 0)
+	await get_tree().process_frame
+
+	assert_true(scene_instance.load_world(path))
+	assert_lt(camera.get_screen_center_position().distance_to(player.global_position), 0.1)
+	assert_lt(
+		player.global_position.distance_to(
+			SandboxPlayer.spawn_position(scene_instance.get_authority().world.spawn_tile)
+		),
+		0.1
+	)
+	await get_tree().process_frame
+	assert_true(
+		weather_view.last_canvas_transform.is_equal_approx(get_viewport().get_canvas_transform())
+	)
+	_remove_test_save(path)
+
+
+func test_background_is_a_full_viewport_layer_behind_world_and_foreground() -> void:
+	var scene_instance: SandboxMain = MAIN_SCENE.instantiate()
+	add_child_autofree(scene_instance)
+	await get_tree().process_frame
+	var background_layer: CanvasLayer = scene_instance.get_node("BackgroundLayer")
+	var background: ColorRect = background_layer.get_node("Background")
+	var foreground_layer: CanvasLayer = scene_instance.get_node("CanvasLayer")
+
+	assert_eq(background.get_parent(), background_layer)
+	assert_eq(background_layer.layer, -1)
+	assert_eq(background.anchor_right, 1.0)
+	assert_eq(background.anchor_bottom, 1.0)
+	assert_gt(foreground_layer.layer, background_layer.layer)
+
+
 func _physical_keycodes(action: StringName) -> Array[Key]:
 	var keycodes: Array[Key] = []
 	for input_event: InputEvent in InputMap.action_get_events(action):

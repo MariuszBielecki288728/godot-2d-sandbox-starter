@@ -14,6 +14,8 @@ Tile collision polygons must use the same documented cell-center convention as v
 
 Presentation depending on mutable `WorldState` must observe relevant state changes; query-only tests do not prove runtime invalidation. Manual-QA controls must avoid editor-reserved shortcuts when embedded Godot play is supported. Weather occlusion calculations use canonical world/tile coordinates and explicitly convert to screen space.
 
+Any screen-space presentation derived from world coordinates must invalidate or recompute when the camera/canvas transform changes, not only when domain state changes. Hard player teleports and reloads must explicitly define camera behavior; never leave smoothing to interpolate from stale presentation state accidentally.
+
 The host owns shared world, inventory/crafting results, weather, and saves. Clients request intents and never declare a mutation authoritative. Single-player goes through the same authority path. Randomness must be explicitly seeded or derived deterministically. IDs in saves and network messages must be stable semantic IDs, never array ordinals, resource paths alone, or instance IDs.
 
 Prefer small typed `RefCounted`/`Resource` values over scene objects for domain logic. Do not add an ECS, DI container, service locator, generic event bus, plugin framework, or speculative system. Do not add enemies, combat, quests, technology trees, or production art without explicit request.

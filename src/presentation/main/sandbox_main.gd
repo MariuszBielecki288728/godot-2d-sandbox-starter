@@ -77,9 +77,10 @@ func _show_result(result: ActionResult) -> void:
 
 func _apply_authority(message: String) -> void:
 	_world_view.set_world(_authority.world)
+	_player.global_position = SandboxPlayer.spawn_position(_authority.world.spawn_tile)
+	_player.reset_camera_smoothing()
 	_weather_view.set_world(_authority.world)
 	_weather_view.set_weather(_authority.weather)
-	_player.global_position = SandboxPlayer.spawn_position(_authority.world.spawn_tile)
 	_hud.show_state(_authority, _selected_item, message)
 
 
