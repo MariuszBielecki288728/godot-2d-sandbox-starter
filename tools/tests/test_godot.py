@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 
+from godot_devtools import godot
 from godot_devtools.godot import is_expected_godot_version
 from godot_devtools.root import discover_repository_root
 
@@ -22,3 +23,17 @@ def test_repository_root_discovery_walks_to_godot_markers(tmp_path: Path) -> Non
     nested = tmp_path / "tools/src/godot_devtools"
     nested.mkdir(parents=True)
     assert discover_repository_root(nested) == tmp_path
+
+
+def test_network_smoke_runs_the_project_script(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    commands: list[list[str]] = []
+    monkeypatch.setattr(godot, "find_godot", lambda: "godot")
+    monkeypatch.setattr(godot, "run", lambda command, cwd: commands.append(list(command)))
+
+    godot.network_smoke(tmp_path)
+
+    assert commands == [
+        ["godot", "--headless", "--path", str(tmp_path), "--script", "res://tests/network_smoke.gd"]
+    ]

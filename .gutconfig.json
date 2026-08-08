@@ -1,7 +1,8 @@
 {
   "dirs": [
     "res://tests/unit",
-    "res://tests/integration"
+    "res://tests/integration",
+    "res://tests/simulation"
   ],
   "include_subdirs": true,
   "should_exit": true,

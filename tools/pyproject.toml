@@ -5,7 +5,7 @@ build-backend = "uv_build"
 [project]
 name = "godot-devtools"
 version = "0.1.0"
-description = "Development tooling for the Godot engineering starter"
+description = "Development tooling for the Godot 2D Sandbox Starter"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "gdtoolkit==4.5.0",

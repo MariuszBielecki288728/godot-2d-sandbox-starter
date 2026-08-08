@@ -60,6 +60,8 @@ jobs:
         run: uv run --project tools --locked godot-dev test-godot
       - name: Headless smoke test
         run: uv run --project tools --locked godot-dev smoke
+      - name: Loopback network smoke test
+        run: uv run --project tools --locked godot-dev network-smoke
       - name: Windows export smoke test
         run: uv run --project tools --locked godot-dev export-windows
 

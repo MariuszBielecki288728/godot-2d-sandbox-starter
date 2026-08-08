@@ -62,12 +62,27 @@ def smoke(repo_root: Path) -> None:
     run([find_godot(), "--headless", "--path", str(repo_root), "--quit-after", "10"], cwd=repo_root)
 
 
+def network_smoke(repo_root: Path) -> None:
+    """Exercise a real loopback ENet host/client authority replication path."""
+    run(
+        [
+            find_godot(),
+            "--headless",
+            "--path",
+            str(repo_root),
+            "--script",
+            "res://tests/network_smoke.gd",
+        ],
+        cwd=repo_root,
+    )
+
+
 def launch(repo_root: Path) -> None:
     run([find_godot(), "--path", str(repo_root)], cwd=repo_root)
 
 
 def export_windows(repo_root: Path) -> None:
-    output = repo_root / "build" / "windows" / "godot-engineering-starter.exe"
+    output = repo_root / "build" / "windows" / "godot-2d-sandbox-starter.exe"
     output.parent.mkdir(parents=True, exist_ok=True)
     run(
         [

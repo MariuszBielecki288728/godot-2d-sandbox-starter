@@ -1,14 +1,17 @@
 # Architecture
 
-This starter deliberately imposes no gameplay architecture. Its boundaries are:
+## Ownership and boundaries
 
-- `src/` and `scenes/`: first-party Godot runtime code and executable scenes;
-- `tests/`: GUT tests for Godot code;
-- `dependencies.json`: exact manifest-managed Godot/project dependency pins;
-- `addons/gut/`: generated third-party Godot development code, excluded from first-party checks;
-- `tools/`: isolated uv-managed Python development-tool project and its Pytest suite;
-- `justfile`: thin repository-level developer-command facade;
-- `.github/workflows/ci.yml`: CI orchestration over the same `godot-dev` commands.
+The canonical finite world, inventory, recipes, and weather are `RefCounted` domain values. A `WorldState` stores tiles in chunk-keyed dictionaries and exposes integer tile coordinates. It does not know about Nodes or rendering. `WorldView` and `WeatherView` observe that state and draw placeholder pixels; the view is replaceable and never queried for truth.
 
-`src/bootstrap/` exists solely to prove project-owned code loads and executes. It is not a
-framework and should be removed or replaced when real game code starts.
+`SandboxAuthority` is the narrow application boundary for mine, place, and craft operations. It checks bounds, reach, tile rules, available inventory, and station capability before making an atomic mutation. A local player calls that same authority. A multiplayer client sends an intent to the host; the host applies the authority operation and replicates its result.
+
+## World and generation
+
+`WorldConfig` owns dimensions, chunk size (16), and the starter 16px render scale. `WorldGenerator` uses explicit seed/configuration and versioned coordinate-derived values, so generation is repeatable regardless of unrelated runtime randomness. The small playable world is fully resident; the chunk boundary is a future finite-world storage/render/synchronization seam, not streaming.
+
+## Persistence and multiplayer
+
+`SaveStore` writes versioned inspectable JSON containing world configuration/seed/tile records, spawn, inventory, and weather. It rejects corrupt and unsupported data without instantiating scenes. The initial implementation saves full tile records for clarity; future chunk-delta persistence may replace that representation while retaining stable IDs and version migration.
+
+The loopback ENet smoke makes a client request a mine action, has the host validate/mutate it, and applies the replicated tile result to a client mirror. It is deliberately a minimal transport adapter proof, not lockstep, matchmaking, or an Internet multiplayer solution.

@@ -1,0 +1,44 @@
+class_name TileCatalog
+extends RefCounted
+
+const AIR: StringName = &"tile:air"
+const DIRT: StringName = &"tile:dirt"
+const STONE: StringName = &"tile:stone"
+const ORE: StringName = &"tile:ore"
+const WORKBENCH: StringName = &"tile:workbench"
+
+const ITEM_DIRT: StringName = &"item:dirt"
+const ITEM_STONE: StringName = &"item:stone"
+const ITEM_ORE: StringName = &"item:ore"
+const ITEM_STONE_BLOCK: StringName = &"item:stone_block"
+const ITEM_WORKBENCH: StringName = &"item:workbench"
+
+
+static func definition(tile_id: StringName) -> TileDefinition:
+	match tile_id:
+		DIRT:
+			return TileDefinition.new(DIRT, true, true, ITEM_DIRT, Color("8b5a2b"))
+		STONE:
+			return TileDefinition.new(STONE, true, true, ITEM_STONE, Color("7d7d7d"))
+		ORE:
+			return TileDefinition.new(ORE, true, true, ITEM_ORE, Color("bf8f43"))
+		WORKBENCH:
+			return TileDefinition.new(WORKBENCH, true, false, StringName(), Color("9b6b35"))
+		_:
+			return TileDefinition.new(AIR, false, false, StringName(), Color.TRANSPARENT)
+
+
+static func is_known(tile_id: StringName) -> bool:
+	return tile_id in [AIR, DIRT, STONE, ORE, WORKBENCH]
+
+
+static func tile_for_item(item_id: StringName) -> StringName:
+	match item_id:
+		ITEM_DIRT:
+			return DIRT
+		ITEM_STONE_BLOCK:
+			return STONE
+		ITEM_WORKBENCH:
+			return WORKBENCH
+		_:
+			return AIR

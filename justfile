@@ -25,6 +25,9 @@ godot-check:
 smoke:
     uv run --project tools --locked godot-dev smoke
 
+network-smoke:
+    uv run --project tools --locked godot-dev network-smoke
+
 check:
     uv run --project tools --locked godot-dev check
 
