@@ -43,17 +43,28 @@ func _unhandled_input(event: InputEvent) -> void:
 			_authority.craft_at(_player.tile_coordinate(), CraftingService.stone_block_recipe())
 		)
 	elif event.is_action_pressed(&"save_world"):
-		var message := "Saved." if SaveStore.save_to_path(SAVE_PATH, _authority) else "Save failed."
-		_hud.show_state(_authority, _selected_item, message)
+		save_world()
 	elif event.is_action_pressed(&"load_world"):
-		var loaded := SaveStore.load_from_path(SAVE_PATH)
-		if bool(loaded.get("ok", false)):
-			_authority = loaded["authority"]
-			_apply_authority("Loaded.")
-		else:
-			_hud.show_state(
-				_authority, _selected_item, "Load failed: %s" % loaded.get("error", "unknown")
-			)
+		load_world()
+
+
+func save_world(path: String = SAVE_PATH) -> bool:
+	var succeeded := SaveStore.save_to_path(path, _authority)
+	var message := "Saved." if succeeded else "Save failed."
+	_hud.show_state(_authority, _selected_item, message)
+	if succeeded:
+		print("Saved sandbox to: %s" % ProjectSettings.globalize_path(path))
+	return succeeded
+
+
+func load_world(path: String = SAVE_PATH) -> bool:
+	var loaded := SaveStore.load_from_path(path)
+	if bool(loaded.get("ok", false)):
+		_authority = loaded["authority"]
+		_apply_authority("Loaded.")
+		return true
+	_hud.show_state(_authority, _selected_item, "Load failed: %s" % loaded.get("error", "unknown"))
+	return false
 
 
 func _mouse_tile() -> Vector2i:

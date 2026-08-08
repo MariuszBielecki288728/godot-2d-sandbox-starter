@@ -60,11 +60,11 @@ select_next={
 }
 save_world={
 "deadzone": 0.5,
-"events": [Object(InputEventKey,"physical_keycode":4194323)]
+"events": [Object(InputEventKey,"physical_keycode":75)]
 }
 load_world={
 "deadzone": 0.5,
-"events": [Object(InputEventKey,"physical_keycode":4194326)]
+"events": [Object(InputEventKey,"physical_keycode":76)]
 }
 
 [rendering]

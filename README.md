@@ -24,9 +24,11 @@ Requirements are Godot **4.7.1 stable** (standard GDScript build), `uv`, and `ju
 | Right mouse | Place the selected placeable item |
 | C | Craft a stone block when beside a workbench |
 | Q | Cycle the selected placeable inventory item |
-| F5 / F9 | Save / load `user://sandbox-save.json` |
+| K / L | Save / load `user://sandbox-save.json` |
 
 The initial weather is rain so the boundary is visible. `Q` cycles placeable items currently held. Workbenches and crafted stone blocks can both be placed and recovered; natural stone remains raw stone when mined. Rain uses a simple vertical shelter rule: a solid tile above blocks it, so rain is visible outside but not beneath roofs or terrain. The HUD is only a view of the domain inventory and weather; it does not own any gameplay state.
+
+`K` and `L` are deliberately ordinary keys so save/load works in Godot Editor embedded play mode. A successful save reports `Saved.` in the HUD and prints the resolved path for `user://sandbox-save.json` to Godot's output; use that path to inspect or deliberately corrupt a save before testing the load error message.
 
 ## Architecture
 
