@@ -4,6 +4,7 @@ extends RefCounted
 const AIR: StringName = &"tile:air"
 const DIRT: StringName = &"tile:dirt"
 const STONE: StringName = &"tile:stone"
+const STONE_BLOCK: StringName = &"tile:stone_block"
 const ORE: StringName = &"tile:ore"
 const WORKBENCH: StringName = &"tile:workbench"
 
@@ -20,6 +21,8 @@ static func definition(tile_id: StringName) -> TileDefinition:
 			return TileDefinition.new(DIRT, true, true, ITEM_DIRT, Color("8b5a2b"))
 		STONE:
 			return TileDefinition.new(STONE, true, true, ITEM_STONE, Color("7d7d7d"))
+		STONE_BLOCK:
+			return TileDefinition.new(STONE_BLOCK, true, true, ITEM_STONE_BLOCK, Color("7d7d7d"))
 		ORE:
 			return TileDefinition.new(ORE, true, true, ITEM_ORE, Color("bf8f43"))
 		WORKBENCH:
@@ -29,7 +32,7 @@ static func definition(tile_id: StringName) -> TileDefinition:
 
 
 static func is_known(tile_id: StringName) -> bool:
-	return tile_id in [AIR, DIRT, STONE, ORE, WORKBENCH]
+	return tile_id in [AIR, DIRT, STONE, STONE_BLOCK, ORE, WORKBENCH]
 
 
 static func is_known_item(item_id: StringName) -> bool:
@@ -41,7 +44,7 @@ static func tile_for_item(item_id: StringName) -> StringName:
 		ITEM_DIRT:
 			return DIRT
 		ITEM_STONE_BLOCK:
-			return STONE
+			return STONE_BLOCK
 		ITEM_WORKBENCH:
 			return WORKBENCH
 		_:

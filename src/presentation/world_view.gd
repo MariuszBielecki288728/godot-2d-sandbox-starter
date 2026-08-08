@@ -28,11 +28,12 @@ func _ensure_tile_set() -> void:
 	if _tile_set_ready:
 		return
 	var image := Image.create(
-		WorldConfig.TILE_SIZE_PIXELS * 4, WorldConfig.TILE_SIZE_PIXELS, false, Image.FORMAT_RGBA8
+		WorldConfig.TILE_SIZE_PIXELS * 5, WorldConfig.TILE_SIZE_PIXELS, false, Image.FORMAT_RGBA8
 	)
 	var tile_ids: Array[StringName] = [
 		TileCatalog.DIRT,
 		TileCatalog.STONE,
+		TileCatalog.STONE_BLOCK,
 		TileCatalog.ORE,
 		TileCatalog.WORKBENCH,
 	]
@@ -50,6 +51,7 @@ func _ensure_tile_set() -> void:
 	generated_tile_set.tile_size = Vector2i.ONE * WorldConfig.TILE_SIZE_PIXELS
 	generated_tile_set.add_physics_layer()
 	generated_tile_set.add_source(atlas, 0)
+	var half_tile: Vector2 = Vector2.ONE * float(WorldConfig.TILE_SIZE_PIXELS) / 2.0
 	for index: int in tile_ids.size():
 		var atlas_position := Vector2i(index, 0)
 		atlas.create_tile(atlas_position)
@@ -62,10 +64,10 @@ func _ensure_tile_set() -> void:
 				0,
 				PackedVector2Array(
 					[
-						Vector2.ZERO,
-						Vector2(WorldConfig.TILE_SIZE_PIXELS, 0),
-						Vector2(WorldConfig.TILE_SIZE_PIXELS, WorldConfig.TILE_SIZE_PIXELS),
-						Vector2(0, WorldConfig.TILE_SIZE_PIXELS),
+						-half_tile,
+						Vector2(half_tile.x, -half_tile.y),
+						half_tile,
+						Vector2(-half_tile.x, half_tile.y),
 					]
 				)
 			)
@@ -79,7 +81,14 @@ func _apply_tile(position: Vector2i, tile_id: StringName) -> void:
 		erase_cell(position)
 		return
 	var atlas_x: int = (
-		[TileCatalog.DIRT, TileCatalog.STONE, TileCatalog.ORE, TileCatalog.WORKBENCH].find(tile_id)
+		[
+			TileCatalog.DIRT,
+			TileCatalog.STONE,
+			TileCatalog.STONE_BLOCK,
+			TileCatalog.ORE,
+			TileCatalog.WORKBENCH,
+		]
+		. find(tile_id)
 	)
 	if atlas_x >= 0:
 		set_cell(position, 0, Vector2i(atlas_x, 0))

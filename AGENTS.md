@@ -10,6 +10,8 @@ Inspect relevant files, nearby tests, and existing patterns first. Make focused 
 
 Terrain visual cells and terrain physics cells are both projections of `WorldState`; never add an independent terrain collider. A tile mutation is incomplete until every relevant presentation projection is updated. Changes to mining, placement, or collision require scene/physics integration coverage, not only domain tests. Transport smoke tests must call reusable production adapters rather than carrying production protocol rules only in test scripts.
 
+Tile collision polygons must use the same documented cell-center convention as visuals; boundary integration tests must detect geometry translation, not merely collider presence. Tile/pixel conversion goes through the canonical coordinate helper rather than duplicated arithmetic. Save loading validates semantically complete persistent state before construction and never silently normalizes unknown IDs or invalid limits. Weather exposure/shelter belongs in deterministic domain state; precipitation rendering remains presentation-only.
+
 The host owns shared world, inventory/crafting results, weather, and saves. Clients request intents and never declare a mutation authoritative. Single-player goes through the same authority path. Randomness must be explicitly seeded or derived deterministically. IDs in saves and network messages must be stable semantic IDs, never array ordinals, resource paths alone, or instance IDs.
 
 Prefer small typed `RefCounted`/`Resource` values over scene objects for domain logic. Do not add an ECS, DI container, service locator, generic event bus, plugin framework, or speculative system. Do not add enemies, combat, quests, technology trees, or production art without explicit request.

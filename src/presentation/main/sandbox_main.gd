@@ -2,6 +2,7 @@ class_name SandboxMain
 extends Node2D
 
 const SAVE_PATH: String = "user://sandbox-save.json"
+const COORDINATES := preload("res://src/domain/world/world_coordinates.gd")
 
 var _authority: SandboxAuthority
 var _selected_item: StringName = TileCatalog.ITEM_WORKBENCH
@@ -56,8 +57,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _mouse_tile() -> Vector2i:
-	var position := _world_view.to_local(get_global_mouse_position()) / WorldConfig.TILE_SIZE_PIXELS
-	return Vector2i(floori(position.x), floori(position.y))
+	return COORDINATES.world_to_tile(_world_view.to_local(get_global_mouse_position()))
 
 
 func _show_result(result: ActionResult) -> void:
@@ -66,8 +66,9 @@ func _show_result(result: ActionResult) -> void:
 
 func _apply_authority(message: String) -> void:
 	_world_view.set_world(_authority.world)
+	_weather_view.set_world(_authority.world)
 	_weather_view.set_weather(_authority.weather)
-	_player.global_position = Vector2(_authority.world.spawn_tile * WorldConfig.TILE_SIZE_PIXELS)
+	_player.global_position = SandboxPlayer.spawn_position(_authority.world.spawn_tile)
 	_hud.show_state(_authority, _selected_item, message)
 
 

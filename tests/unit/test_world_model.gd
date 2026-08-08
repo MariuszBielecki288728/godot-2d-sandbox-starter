@@ -1,5 +1,7 @@
 extends GutTest
 
+const COORDINATES := preload("res://src/domain/world/world_coordinates.gd")
+
 
 func test_chunk_coordinates_round_trip_for_positive_tiles() -> void:
 	var world := WorldState.new(WorldConfig.new(64, 36, 16))
@@ -34,3 +36,30 @@ func test_generation_varies_across_seeds_and_uses_only_known_tiles() -> void:
 	assert_ne(first.tile_records(), second.tile_records())
 	for record: Dictionary in first.tile_records():
 		assert_true(TileCatalog.is_known(StringName(record["id"])))
+
+
+func test_world_coordinate_conversion_round_trips_tile_centers_and_boundaries() -> void:
+	for tile: Vector2i in [Vector2i.ZERO, Vector2i(3, 5), Vector2i(63, 35)]:
+		assert_eq(COORDINATES.world_to_tile(COORDINATES.tile_to_world_center(tile)), tile)
+	assert_eq(COORDINATES.world_to_tile(Vector2(16, 16)), Vector2i(1, 1))
+	assert_eq(COORDINATES.world_to_tile(Vector2(15.99, 15.99)), Vector2i.ZERO)
+
+
+func test_generated_spawn_uses_a_tile_center_coordinate() -> void:
+	var world := WorldGenerator.new().generate(WorldConfig.new(32, 24), 77)
+
+	assert_eq(
+		COORDINATES.world_to_tile(COORDINATES.tile_to_world_center(world.spawn_tile)),
+		world.spawn_tile
+	)
+
+
+func test_sky_exposure_changes_when_a_solid_roof_is_placed_or_removed() -> void:
+	var world := WorldState.new(WorldConfig.new(8, 8))
+	var sheltered_tile := Vector2i(2, 3)
+
+	assert_true(world.is_exposed_to_sky(sheltered_tile))
+	world.set_tile(Vector2i(2, 2), TileCatalog.DIRT)
+	assert_false(world.is_exposed_to_sky(sheltered_tile))
+	world.set_tile(Vector2i(2, 2), TileCatalog.AIR)
+	assert_true(world.is_exposed_to_sky(sheltered_tile))

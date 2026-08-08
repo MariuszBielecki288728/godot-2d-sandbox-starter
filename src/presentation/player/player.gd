@@ -1,9 +1,11 @@
 class_name SandboxPlayer
 extends CharacterBody2D
 
+const COORDINATES := preload("res://src/domain/world/world_coordinates.gd")
 const MOVE_SPEED: float = 150.0
 const JUMP_VELOCITY: float = -260.0
 const GRAVITY: float = 900.0
+const BODY_HALF_HEIGHT: float = 10.0
 
 
 func _physics_process(delta: float) -> void:
@@ -17,10 +19,12 @@ func _physics_process(delta: float) -> void:
 
 
 func tile_coordinate() -> Vector2i:
-	return Vector2i(
-		floori(global_position.x / WorldConfig.TILE_SIZE_PIXELS),
-		floori(global_position.y / WorldConfig.TILE_SIZE_PIXELS)
-	)
+	return COORDINATES.world_to_tile(global_position)
+
+
+static func spawn_position(spawn_tile: Vector2i) -> Vector2:
+	var floor_clearance: float = BODY_HALF_HEIGHT - float(WorldConfig.TILE_SIZE_PIXELS) / 2.0
+	return COORDINATES.tile_to_world_center(spawn_tile) - Vector2(0, floor_clearance)
 
 
 func occupied_tiles() -> Array[Vector2i]:
@@ -29,12 +33,10 @@ func occupied_tiles() -> Array[Vector2i]:
 	var maximum := global_position + half_size
 	var tiles: Array[Vector2i] = []
 	for y: int in range(
-		floori(minimum.y / WorldConfig.TILE_SIZE_PIXELS),
-		floori(maximum.y / WorldConfig.TILE_SIZE_PIXELS) + 1
+		COORDINATES.world_to_tile(minimum).y, COORDINATES.world_to_tile(maximum).y + 1
 	):
 		for x: int in range(
-			floori(minimum.x / WorldConfig.TILE_SIZE_PIXELS),
-			floori(maximum.x / WorldConfig.TILE_SIZE_PIXELS) + 1
+			COORDINATES.world_to_tile(minimum).x, COORDINATES.world_to_tile(maximum).x + 1
 		):
 			tiles.append(Vector2i(x, y))
 	return tiles

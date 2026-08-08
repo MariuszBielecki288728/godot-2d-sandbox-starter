@@ -2,9 +2,11 @@ extends SceneTree
 
 const PORT: int = 39137
 const TARGET: Vector2i = Vector2i(2, 1)
+const ACK_TEXT: String = "ack"
 
 var _peer: ENetMultiplayerPeer
 var _authority: SandboxAuthority
+var _transport := AuthoritativeTileTransport.new()
 
 
 func _initialize() -> void:
@@ -23,15 +25,16 @@ func _serve() -> void:
 		_peer.poll()
 		if _peer.get_available_packet_count() > 0:
 			var sender: int = _peer.get_packet_peer()
-			var packet := _peer.get_packet().get_string_from_utf8()
-			if packet == "mine:2:1":
-				if not _authority.mine(Vector2i(1, 1), TARGET).succeeded:
-					quit(1)
-					return
-				_peer.set_target_peer(sender)
-				_peer.put_packet("tile:2:1:tile:air".to_utf8_buffer())
-			elif packet == "ack:tile:air" and _authority.world.get_tile(TARGET) == TileCatalog.AIR:
+			var packet := _peer.get_packet()
+			if (
+				packet.get_string_from_utf8() == ACK_TEXT
+				and _authority.world.get_tile(TARGET) == TileCatalog.AIR
+			):
 				quit(0)
 				return
+			var response := _transport.host_handle(packet, _authority)
+			if bool(response.get("ok", false)):
+				_peer.set_target_peer(sender)
+				_peer.put_packet(response["packet"])
 		await process_frame
 	quit(1)

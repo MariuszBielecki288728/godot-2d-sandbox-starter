@@ -1,6 +1,7 @@
 extends GutTest
 
 const PLAYER_SCENE: PackedScene = preload("res://scenes/player.tscn")
+const COORDINATES := preload("res://src/domain/world/world_coordinates.gd")
 
 
 func test_mining_supporting_tile_removes_projection_collision_and_player_falls() -> void:
@@ -45,8 +46,37 @@ func test_placed_tile_is_projected_and_blocks_player_motion() -> void:
 	assert_not_null(player.move_and_collide(Vector2(60, 0)))
 
 
+func test_solid_tile_collision_matches_its_visual_cell_boundaries() -> void:
+	var world := WorldState.new(WorldConfig.new(8, 8))
+	var tile := Vector2i(2, 2)
+	world.set_tile(tile, TileCatalog.DIRT)
+	var view := WorldView.new()
+	add_child_autofree(view)
+	view.set_world(world)
+	await get_tree().physics_frame
+
+	var center: Vector2 = COORDINATES.tile_to_world_center(tile)
+	assert_true(_has_terrain_collision(view, center))
+	assert_false(_has_terrain_collision(view, center + Vector2(-8.2, 0)))
+	assert_false(_has_terrain_collision(view, center + Vector2(8.2, 0)))
+	assert_false(_has_terrain_collision(view, center + Vector2(0, -8.2)))
+	assert_false(_has_terrain_collision(view, center + Vector2(0, 8.2)))
+
+
 func _floor_world() -> WorldState:
 	var world := WorldState.new(WorldConfig.new(8, 8))
 	for x: int in range(1, 4):
 		world.set_tile(Vector2i(x, 4), TileCatalog.DIRT)
 	return world
+
+
+func _has_terrain_collision(view: WorldView, position: Vector2) -> bool:
+	var shape := RectangleShape2D.new()
+	shape.size = Vector2.ONE * 0.2
+	var query := PhysicsShapeQueryParameters2D.new()
+	query.shape = shape
+	query.transform = Transform2D(0.0, position)
+	for result: Dictionary in view.get_world_2d().direct_space_state.intersect_shape(query, 8):
+		if result.get("collider") == view:
+			return true
+	return false

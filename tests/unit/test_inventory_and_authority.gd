@@ -94,13 +94,53 @@ func test_multiplayer_codec_rejects_malformed_messages() -> void:
 		(
 			codec
 			. decode(
+				'{"type":"mine","player":{"x":"1","y":1},"target":{"x":2,"y":1}}'.to_utf8_buffer()
+			)["ok"]
+		)
+	)
+	assert_false(codec.decode('{"type":"unknown"}'.to_utf8_buffer())["ok"])
+	assert_false(
+		(
+			codec
+			. decode(
 				'{"type":"tile_update","position":{"x":1,"y":1},"id":"tile:nope"}'.to_utf8_buffer()
 			)["ok"]
 		)
 	)
 
 
-func test_crafted_stone_block_can_be_consumed_for_placement() -> void:
+func test_multiplayer_codec_round_trips_supported_messages() -> void:
+	var codec := TileActionCodec.new()
+	var mine := codec.decode(codec.mine_intent(Vector2i(1, 2), Vector2i(3, 4)))
+	var update := codec.decode(codec.tile_update(Vector2i(3, 4), TileCatalog.DIRT))
+
+	assert_true(mine["ok"])
+	assert_eq(mine["type"], &"mine")
+	assert_eq(mine["player"], Vector2i(1, 2))
+	assert_eq(mine["target"], Vector2i(3, 4))
+	assert_true(update["ok"])
+	assert_eq(update["type"], &"tile_update")
+	assert_eq(update["position"], Vector2i(3, 4))
+	assert_eq(update["id"], TileCatalog.DIRT)
+
+
+func test_invalid_network_message_does_not_mutate_authority_state() -> void:
+	var world := WorldState.new(WorldConfig.new(8, 8))
+	var target := Vector2i(2, 1)
+	world.set_tile(target, TileCatalog.DIRT)
+	var inventory := Inventory.new()
+	var authority := SandboxAuthority.new(world, inventory, WeatherState.new())
+	var response := AuthoritativeTileTransport.new().host_handle(
+		'{"type":"mine","player":{"x":1,"y":1},"target":{"x":"2","y":1}}'.to_utf8_buffer(),
+		authority
+	)
+
+	assert_false(response["ok"])
+	assert_eq(world.get_tile(target), TileCatalog.DIRT)
+	assert_eq(inventory.count(TileCatalog.ITEM_DIRT), 0)
+
+
+func test_crafted_stone_block_can_be_placed_then_recovered_without_conversion() -> void:
 	var world := WorldState.new(WorldConfig.new(8, 8))
 	world.set_tile(Vector2i(2, 1), TileCatalog.WORKBENCH)
 	var inventory := Inventory.new()
@@ -112,4 +152,20 @@ func test_crafted_stone_block_can_be_consumed_for_placement() -> void:
 		authority.place(Vector2i(1, 1), Vector2i(3, 1), TileCatalog.ITEM_STONE_BLOCK).succeeded
 	)
 	assert_eq(inventory.count(TileCatalog.ITEM_STONE_BLOCK), 0)
-	assert_eq(world.get_tile(Vector2i(3, 1)), TileCatalog.STONE)
+	assert_eq(world.get_tile(Vector2i(3, 1)), TileCatalog.STONE_BLOCK)
+	assert_true(authority.mine(Vector2i(1, 1), Vector2i(3, 1)).succeeded)
+	assert_eq(world.get_tile(Vector2i(3, 1)), TileCatalog.AIR)
+	assert_eq(inventory.count(TileCatalog.ITEM_STONE_BLOCK), 1)
+	assert_eq(inventory.count(TileCatalog.ITEM_STONE), 0)
+
+
+func test_natural_stone_continues_to_drop_raw_stone() -> void:
+	var world := WorldState.new(WorldConfig.new(8, 8))
+	var target := Vector2i(2, 1)
+	world.set_tile(target, TileCatalog.STONE)
+	var inventory := Inventory.new()
+	var authority := SandboxAuthority.new(world, inventory, WeatherState.new())
+
+	assert_true(authority.mine(Vector2i(1, 1), target).succeeded)
+	assert_eq(inventory.count(TileCatalog.ITEM_STONE), 1)
+	assert_eq(inventory.count(TileCatalog.ITEM_STONE_BLOCK), 0)

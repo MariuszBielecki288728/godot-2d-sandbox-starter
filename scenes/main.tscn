@@ -6,9 +6,6 @@
 [ext_resource type="Script" path="res://src/presentation/weather_view.gd" id="4_weather"]
 [ext_resource type="Script" path="res://src/presentation/sandbox_hud.gd" id="5_hud"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
-size = Vector2(1024, 320)
-
 [node name="SandboxMain" type="Node2D"]
 script = ExtResource("1_main")
 

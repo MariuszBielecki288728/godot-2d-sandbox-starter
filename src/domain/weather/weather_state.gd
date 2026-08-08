@@ -12,10 +12,14 @@ func _init(initial_kind: StringName = CLEAR) -> void:
 
 
 func set_kind(next_kind: StringName) -> bool:
-	if not next_kind in [CLEAR, RAIN]:
+	if not is_known_kind(next_kind):
 		return false
 	kind = next_kind
 	return true
+
+
+static func is_known_kind(weather_kind: StringName) -> bool:
+	return weather_kind in [CLEAR, RAIN]
 
 
 func to_data() -> Dictionary:

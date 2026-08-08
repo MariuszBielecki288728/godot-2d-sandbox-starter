@@ -50,7 +50,7 @@ func _is_coordinate(value: Variant) -> bool:
 	if not value is Dictionary:
 		return false
 	var coordinate: Dictionary = value
-	return typeof(coordinate.get("x")) == TYPE_INT and typeof(coordinate.get("y")) == TYPE_INT
+	return _is_integer(coordinate.get("x")) and _is_integer(coordinate.get("y"))
 
 
 func _coordinate(data: Dictionary) -> Vector2i:
@@ -59,3 +59,10 @@ func _coordinate(data: Dictionary) -> Vector2i:
 
 func _data(position: Vector2i) -> Dictionary:
 	return {"x": position.x, "y": position.y}
+
+
+func _is_integer(value: Variant) -> bool:
+	return (
+		(typeof(value) == TYPE_INT or typeof(value) == TYPE_FLOAT)
+		and is_equal_approx(float(value), floorf(float(value)))
+	)

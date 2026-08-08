@@ -2,10 +2,13 @@ extends SceneTree
 
 const PORT: int = 39137
 const TARGET: Vector2i = Vector2i(2, 1)
+const ACK_TEXT: String = "ack"
 
 var _peer: ENetMultiplayerPeer
 var _sent_request: bool = false
 var _world: WorldState
+var _transport := AuthoritativeTileTransport.new()
+var _codec := TileActionCodec.new()
 
 
 func _initialize() -> void:
@@ -25,14 +28,12 @@ func _connect() -> void:
 			_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED
 			and not _sent_request
 		):
-			_peer.put_packet("mine:2:1".to_utf8_buffer())
+			_peer.put_packet(_codec.mine_intent(Vector2i(1, 1), TARGET))
 			_sent_request = true
 		if _peer.get_available_packet_count() > 0:
-			var packet := _peer.get_packet().get_string_from_utf8()
-			if packet == "tile:2:1:tile:air":
-				_world.set_tile(TARGET, TileCatalog.AIR)
+			if _transport.client_apply(_peer.get_packet(), _world):
 				if _world.get_tile(TARGET) == TileCatalog.AIR:
-					_peer.put_packet("ack:tile:air".to_utf8_buffer())
+					_peer.put_packet(ACK_TEXT.to_utf8_buffer())
 					quit(0)
 					return
 		await process_frame

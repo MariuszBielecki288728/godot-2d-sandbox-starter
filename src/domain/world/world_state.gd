@@ -41,6 +41,24 @@ func get_tile(position: Vector2i) -> StringName:
 	return StringName(chunk.get(local_coordinate(position), TileCatalog.AIR))
 
 
+func is_exposed_to_sky(position: Vector2i) -> bool:
+	if not is_in_bounds(position):
+		return false
+	for y: int in range(position.y - 1, -1, -1):
+		if TileCatalog.definition(get_tile(Vector2i(position.x, y))).is_solid:
+			return false
+	return true
+
+
+func first_solid_y_at_or_below(column: int, start_y: int) -> int:
+	if column < 0 or column >= config.width:
+		return -1
+	for y: int in range(maxi(start_y, 0), config.height):
+		if TileCatalog.definition(get_tile(Vector2i(column, y))).is_solid:
+			return y
+	return -1
+
+
 func set_tile(position: Vector2i, tile_id: StringName) -> bool:
 	if not is_in_bounds(position) or not TileCatalog.is_known(tile_id):
 		return false

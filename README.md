@@ -21,12 +21,12 @@ Requirements are Godot **4.7.1 stable** (standard GDScript build), `uv`, and `ju
 | A / D | Move left / right |
 | Space | Jump |
 | Left mouse | Mine a nearby tile |
-| Right mouse | Place the starting workbench |
+| Right mouse | Place the selected placeable item |
 | C | Craft a stone block when beside a workbench |
 | Q | Cycle the selected placeable inventory item |
 | F5 / F9 | Save / load `user://sandbox-save.json` |
 
-The initial weather is rain so the boundary is visible. Place the workbench near the player, mine stone, and press C to create a placeable stone block. The HUD is only a view of the domain inventory and weather; it does not own any gameplay state.
+The initial weather is rain so the boundary is visible. `Q` cycles placeable items currently held. Workbenches and crafted stone blocks can both be placed and recovered; natural stone remains raw stone when mined. Rain uses a simple vertical shelter rule: a solid tile above blocks it, so rain is visible outside but not beneath roofs or terrain. The HUD is only a view of the domain inventory and weather; it does not own any gameplay state.
 
 ## Architecture
 
