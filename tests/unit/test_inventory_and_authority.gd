@@ -113,6 +113,9 @@ func test_multiplayer_codec_round_trips_supported_messages() -> void:
 	var codec := TileActionCodec.new()
 	var mine := codec.decode(codec.mine_intent(Vector2i(1, 2), Vector2i(3, 4)))
 	var update := codec.decode(codec.tile_update(Vector2i(3, 4), TileCatalog.DIRT))
+	var background_mine := codec.decode(
+		codec.mine_intent(Vector2i(1, 2), Vector2i(3, 4), WorldLayer.BACKGROUND)
+	)
 
 	assert_true(mine["ok"])
 	assert_eq(mine["type"], &"mine")
@@ -122,6 +125,7 @@ func test_multiplayer_codec_round_trips_supported_messages() -> void:
 	assert_eq(update["type"], &"tile_update")
 	assert_eq(update["position"], Vector2i(3, 4))
 	assert_eq(update["id"], TileCatalog.DIRT)
+	assert_eq(background_mine["layer"], WorldLayer.BACKGROUND)
 
 
 func test_invalid_network_message_does_not_mutate_authority_state() -> void:
@@ -169,3 +173,76 @@ func test_natural_stone_continues_to_drop_raw_stone() -> void:
 	assert_true(authority.mine(Vector2i(1, 1), target).succeeded)
 	assert_eq(inventory.count(TileCatalog.ITEM_STONE), 1)
 	assert_eq(inventory.count(TileCatalog.ITEM_STONE_BLOCK), 0)
+
+
+func test_background_wall_placement_and_removal_are_atomic_and_independent() -> void:
+	var world := WorldState.new(WorldConfig.new(8, 8))
+	var inventory := Inventory.new()
+	inventory.add(TileCatalog.ITEM_STONE_WALL, 1)
+	var authority := SandboxAuthority.new(world, inventory, WeatherState.new())
+	var target := Vector2i(2, 1)
+
+	assert_true(
+		(
+			authority
+			. place_in_layer(
+				WorldLayer.BACKGROUND, Vector2i(1, 1), target, TileCatalog.ITEM_STONE_WALL
+			)
+			. succeeded
+		)
+	)
+	assert_eq(world.get_background_tile(target), TileCatalog.STONE_WALL)
+	assert_eq(inventory.count(TileCatalog.ITEM_STONE_WALL), 0)
+	assert_true(authority.mine_in_layer(WorldLayer.BACKGROUND, Vector2i(1, 1), target).succeeded)
+	assert_eq(world.get_background_tile(target), TileCatalog.AIR)
+	assert_eq(inventory.count(TileCatalog.ITEM_STONE_WALL), 1)
+
+
+func test_background_operations_preserve_foreground_and_failed_place_keeps_item() -> void:
+	var world := WorldState.new(WorldConfig.new(8, 8))
+	var inventory := Inventory.new()
+	inventory.add(TileCatalog.ITEM_STONE_WALL, 1)
+	var authority := SandboxAuthority.new(world, inventory, WeatherState.new())
+	var target := Vector2i(2, 1)
+	world.set_foreground_tile(target, TileCatalog.DIRT)
+
+	assert_true(
+		(
+			authority
+			. place_in_layer(
+				WorldLayer.BACKGROUND, Vector2i(1, 1), target, TileCatalog.ITEM_STONE_WALL
+			)
+			. succeeded
+		)
+	)
+	var failed := authority.place_in_layer(
+		WorldLayer.BACKGROUND, Vector2i(1, 1), target, TileCatalog.ITEM_STONE_WALL
+	)
+	assert_false(failed.succeeded)
+	assert_eq(inventory.count(TileCatalog.ITEM_STONE_WALL), 0)
+	assert_true(authority.mine(Vector2i(1, 1), target).succeeded)
+	assert_eq(world.get_background_tile(target), TileCatalog.STONE_WALL)
+	assert_true(authority.mine_in_layer(WorldLayer.BACKGROUND, Vector2i(1, 1), target).succeeded)
+	assert_eq(world.get_foreground_tile(target), TileCatalog.AIR)
+	assert_eq(inventory.count(TileCatalog.ITEM_STONE_WALL), 1)
+
+
+func test_invalid_network_layer_is_rejected_without_mutation() -> void:
+	var world := WorldState.new(WorldConfig.new(8, 8))
+	var target := Vector2i(2, 1)
+	world.set_background_tile(target, TileCatalog.STONE_WALL)
+	var authority := SandboxAuthority.new(world, Inventory.new(), WeatherState.new())
+	var response := (
+		AuthoritativeTileTransport
+		. new()
+		. host_handle(
+			(
+				'{"type":"mine","layer":"world_layer:nope","player":{"x":1,"y":1},"target":{"x":2,"y":1}}'
+				. to_utf8_buffer()
+			),
+			authority
+		)
+	)
+
+	assert_false(response["ok"])
+	assert_eq(world.get_background_tile(target), TileCatalog.STONE_WALL)

@@ -16,6 +16,7 @@ func _initialize() -> void:
 		return
 	var world := WorldState.new(WorldConfig.new(8, 8))
 	world.set_tile(TARGET, TileCatalog.DIRT)
+	world.set_background_tile(TARGET, TileCatalog.STONE_WALL)
 	_authority = SandboxAuthority.new(world, Inventory.new(), WeatherState.new())
 	call_deferred("_serve")
 
@@ -29,6 +30,7 @@ func _serve() -> void:
 			if (
 				packet.get_string_from_utf8() == ACK_TEXT
 				and _authority.world.get_tile(TARGET) == TileCatalog.AIR
+				and _authority.world.get_background_tile(TARGET) == TileCatalog.AIR
 			):
 				quit(0)
 				return

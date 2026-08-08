@@ -22,7 +22,7 @@ grow_vertical = 2
 color = Color(0.32, 0.62, 0.82, 1)
 mouse_filter = 2
 
-[node name="WorldView" type="TileMapLayer" parent="."]
+[node name="WorldView" type="Node2D" parent="."]
 script = ExtResource("2_world")
 
 [node name="Player" parent="." instance=ExtResource("3_player")]

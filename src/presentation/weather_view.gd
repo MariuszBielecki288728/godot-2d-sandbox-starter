@@ -112,8 +112,9 @@ func rain_end_world_y(column: int, top_world_y: float, bottom_world_y: float) ->
 	return minf(bottom_world_y, float(obstruction_y * WorldConfig.TILE_SIZE_PIXELS))
 
 
-func _on_world_tile_changed(_position: Vector2i, _tile_id: StringName) -> void:
-	_request_redraw()
+func _on_world_tile_changed(layer: StringName, _position: Vector2i, _tile_id: StringName) -> void:
+	if layer == WorldLayer.FOREGROUND:
+		_request_redraw()
 
 
 func _request_redraw() -> void:

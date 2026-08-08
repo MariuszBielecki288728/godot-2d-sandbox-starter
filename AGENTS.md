@@ -18,6 +18,8 @@ Any screen-space presentation derived from world coordinates must invalidate or 
 
 The host owns shared world, inventory/crafting results, weather, and saves. Clients request intents and never declare a mutation authoritative. Single-player goes through the same authority path. Randomness must be explicitly seeded or derived deterministically. IDs in saves and network messages must be stable semantic IDs, never array ordinals, resource paths alone, or instance IDs.
 
+Never encode atlas cells or cosmetic variant IDs in authoritative state; presentation mapping is Resource-driven and variants are deterministic, local-only resolution. Foreground and background-wall mutations are separate authoritative operations. Background walls never create physics or shelter and are distinct from scenic/parallax backgrounds. Keep future autotiling behind the presentation resolver, never in domain state or renderer match statements.
+
 Prefer small typed `RefCounted`/`Resource` values over scene objects for domain logic. Do not add an ECS, DI container, service locator, generic event bus, plugin framework, or speculative system. Do not add enemies, combat, quests, technology trees, or production art without explicit request.
 
 ## Tooling and validation
