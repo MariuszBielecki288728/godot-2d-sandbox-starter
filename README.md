@@ -40,11 +40,11 @@ World generation uses the explicit seed, configuration, and a versioned determin
 | `just format` / `just format-check` | Format or check first-party Python and GDScript. |
 | `just lint` | Run Ruff and gdtoolkit linting. |
 | `just test` | Run Pytest and GUT unit, integration, and simulation tests. |
-| `just network-smoke` | Use real local ENet loopback transport to prove a client intent is host-validated and replicated. |
+| `just network-smoke` | Start headless host and client processes using real local ENet transport, then prove a client intent is host-validated and replicated. |
 | `just check` | Standard local gate: formatting, lint, tests, import, scene smoke, and network smoke. |
 | `just export-windows` | Create an ignored Windows debug export. |
 
-`just check` is expected before a PR; CI runs the same checks and a Windows export. The network smoke is intentionally small: it tests a real ENet connection and representative tile mutation, not matchmaking or Internet deployment.
+`just check` is expected before a PR; CI runs the same checks and a Windows export. The network smoke is intentionally small: it tests two real Godot processes, ENet transport, and a representative tile mutation, not matchmaking or Internet deployment.
 
 ## Template use
 

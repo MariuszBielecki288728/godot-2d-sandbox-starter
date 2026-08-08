@@ -25,15 +25,49 @@ def test_repository_root_discovery_walks_to_godot_markers(tmp_path: Path) -> Non
     assert discover_repository_root(nested) == tmp_path
 
 
-def test_network_smoke_runs_the_project_script(
+def test_network_smoke_runs_host_and_client_scripts(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     commands: list[list[str]] = []
+
+    class Completed:
+        returncode = 0
+
+    class Host:
+        def wait(self, timeout: int) -> int:
+            assert timeout == 15
+            return 0
+
+        def poll(self) -> int:
+            return 0
+
     monkeypatch.setattr(godot, "find_godot", lambda: "godot")
-    monkeypatch.setattr(godot, "run", lambda command, cwd: commands.append(list(command)))
+    monkeypatch.setattr(
+        godot.subprocess, "Popen", lambda command, cwd: (commands.append(command), Host())[1]
+    )
+    monkeypatch.setattr(
+        godot.subprocess,
+        "run",
+        lambda command, cwd, check, timeout: (commands.append(command), Completed())[1],
+    )
 
     godot.network_smoke(tmp_path)
 
     assert commands == [
-        ["godot", "--headless", "--path", str(tmp_path), "--script", "res://tests/network_smoke.gd"]
+        [
+            "godot",
+            "--headless",
+            "--path",
+            str(tmp_path),
+            "--script",
+            "res://tests/network_host_smoke.gd",
+        ],
+        [
+            "godot",
+            "--headless",
+            "--path",
+            str(tmp_path),
+            "--script",
+            "res://tests/network_client_smoke.gd",
+        ],
     ]

@@ -14,4 +14,4 @@ The canonical finite world, inventory, recipes, and weather are `RefCounted` dom
 
 `SaveStore` writes versioned inspectable JSON containing world configuration/seed/tile records, spawn, inventory, and weather. It rejects corrupt and unsupported data without instantiating scenes. The initial implementation saves full tile records for clarity; future chunk-delta persistence may replace that representation while retaining stable IDs and version migration.
 
-The loopback ENet smoke makes a client request a mine action, has the host validate/mutate it, and applies the replicated tile result to a client mirror. It is deliberately a minimal transport adapter proof, not lockstep, matchmaking, or an Internet multiplayer solution.
+The loopback ENet smoke starts separate headless host and client processes. The client requests a mine action, the host validates/mutates it, and the client applies the replicated tile result before acknowledging convergence. It is deliberately a minimal transport adapter proof, not lockstep, matchmaking, or an Internet multiplayer solution.
