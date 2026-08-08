@@ -1,0 +1,121 @@
+class_name WeatherView
+extends Node2D
+
+const COORDINATES := preload("res://src/domain/world/world_coordinates.gd")
+const RAIN_STREAK_SPACING: float = 40.0
+const RAIN_STREAK_VECTOR: Vector2 = Vector2(-8, 18)
+const FIRST_RAIN_SAMPLE_SCREEN_X: float = RAIN_STREAK_SPACING * 0.5
+
+var weather: WeatherState
+var world: WorldState
+var redraw_revision: int = 0
+var camera_redraw_revision: int = 0
+var last_canvas_transform: Transform2D = Transform2D.IDENTITY
+
+var _has_observed_canvas_transform: bool = false
+var _last_observed_canvas_transform: Transform2D = Transform2D.IDENTITY
+
+
+func set_world(next_world: WorldState) -> void:
+	if world != null and world.tile_changed.is_connected(_on_world_tile_changed):
+		world.tile_changed.disconnect(_on_world_tile_changed)
+	world = next_world
+	world.tile_changed.connect(_on_world_tile_changed)
+	_request_redraw()
+
+
+func set_weather(next_weather: WeatherState) -> void:
+	weather = next_weather
+	_request_redraw()
+
+
+func _process(_delta: float) -> void:
+	var canvas_transform := get_viewport().get_canvas_transform()
+	if (
+		not _has_observed_canvas_transform
+		or not _last_observed_canvas_transform.is_equal_approx(canvas_transform)
+	):
+		_last_observed_canvas_transform = canvas_transform
+		_has_observed_canvas_transform = true
+		camera_redraw_revision += 1
+		queue_redraw()
+
+
+func _draw() -> void:
+	if weather == null or weather.kind != WeatherState.RAIN or world == null:
+		return
+	var viewport_size := get_viewport_rect().size
+	var canvas_transform := get_viewport().get_canvas_transform()
+	last_canvas_transform = canvas_transform
+	_last_observed_canvas_transform = canvas_transform
+	_has_observed_canvas_transform = true
+	for segment: Dictionary in rain_segments_for_viewport(viewport_size, canvas_transform):
+		var start: Vector2 = segment["start"]
+		var end: Vector2 = segment["end"]
+		draw_line(start, end, Color("8ecae6aa"), 2.0)
+
+
+func rain_segments_for_viewport(
+	viewport_size: Vector2, canvas_transform: Transform2D
+) -> Array[Dictionary]:
+	var segments: Array[Dictionary] = []
+	if weather == null or weather.kind != WeatherState.RAIN or world == null:
+		return segments
+	var screen_to_world := canvas_transform.affine_inverse()
+	var screen_x := FIRST_RAIN_SAMPLE_SCREEN_X
+	while screen_x < viewport_size.x:
+		var top_world := screen_to_world * Vector2(screen_x, 0)
+		var bottom_world := screen_to_world * Vector2(screen_x, viewport_size.y)
+		var column := world_column_for_screen_x(screen_x, canvas_transform)
+		if column < 0 or column >= world.config.width:
+			screen_x += RAIN_STREAK_SPACING
+			continue
+		var rain_end := rain_end_world_y(column, top_world.y, bottom_world.y)
+		var rain_end_screen_y: float = (canvas_transform * Vector2(top_world.x, rain_end)).y
+		var streak_y := -RAIN_STREAK_VECTOR.y
+		while streak_y < viewport_size.y:
+			if streak_y >= rain_end_screen_y:
+				break
+			var start := Vector2(screen_x, streak_y)
+			var full_end := start + RAIN_STREAK_VECTOR
+			var end := full_end
+			if full_end.y > rain_end_screen_y:
+				var visible_fraction := clampf(
+					(rain_end_screen_y - start.y) / RAIN_STREAK_VECTOR.y, 0.0, 1.0
+				)
+				end = start.lerp(full_end, visible_fraction)
+			if end.y > start.y:
+				segments.append(
+					{"column": column, "screen_x": screen_x, "start": start, "end": end}
+				)
+			streak_y += RAIN_STREAK_SPACING
+		screen_x += RAIN_STREAK_SPACING
+	return segments
+
+
+func world_column_for_screen_x(screen_x: float, canvas_transform: Transform2D) -> int:
+	var world_point := canvas_transform.affine_inverse() * Vector2(screen_x, 0)
+	return COORDINATES.world_to_tile(world_point).x
+
+
+func rain_end_world_y(column: int, top_world_y: float, bottom_world_y: float) -> float:
+	if world == null or column < 0 or column >= world.config.width:
+		return bottom_world_y
+	var start_tile: int = COORDINATES.world_to_tile(Vector2(0, top_world_y)).y
+	if start_tile >= world.config.height:
+		return top_world_y
+	if start_tile >= 0 and not world.is_exposed_to_sky(Vector2i(column, start_tile)):
+		return top_world_y
+	var obstruction_y := world.first_solid_y_at_or_below(column, start_tile)
+	if obstruction_y < 0:
+		return bottom_world_y
+	return minf(bottom_world_y, float(obstruction_y * WorldConfig.TILE_SIZE_PIXELS))
+
+
+func _on_world_tile_changed(_position: Vector2i, _tile_id: StringName) -> void:
+	_request_redraw()
+
+
+func _request_redraw() -> void:
+	redraw_revision += 1
+	queue_redraw()

@@ -62,12 +62,37 @@ def smoke(repo_root: Path) -> None:
     run([find_godot(), "--headless", "--path", str(repo_root), "--quit-after", "10"], cwd=repo_root)
 
 
+def network_smoke(repo_root: Path) -> None:
+    """Exercise host/client authority replication in two loopback Godot processes."""
+    executable = find_godot()
+    base_command = [executable, "--headless", "--path", str(repo_root), "--script"]
+    host = subprocess.Popen([*base_command, "res://tests/network_host_smoke.gd"], cwd=repo_root)
+    try:
+        client = subprocess.run(
+            [*base_command, "res://tests/network_client_smoke.gd"],
+            cwd=repo_root,
+            check=False,
+            timeout=15,
+        )
+        host_returncode = host.wait(timeout=15)
+    except subprocess.TimeoutExpired as error:
+        raise RuntimeError("Network smoke timed out.") from error
+    finally:
+        if host.poll() is None:
+            host.terminate()
+            host.wait(timeout=5)
+    if client.returncode or host_returncode:
+        raise RuntimeError(
+            f"Network smoke failed (host={host_returncode}, client={client.returncode})."
+        )
+
+
 def launch(repo_root: Path) -> None:
     run([find_godot(), "--path", str(repo_root)], cwd=repo_root)
 
 
 def export_windows(repo_root: Path) -> None:
-    output = repo_root / "build" / "windows" / "godot-engineering-starter.exe"
+    output = repo_root / "build" / "windows" / "godot-2d-sandbox-starter.exe"
     output.parent.mkdir(parents=True, exist_ok=True)
     run(
         [

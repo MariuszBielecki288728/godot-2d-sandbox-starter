@@ -1,30 +1,14 @@
 # Contributing
 
-## Initial setup
+Install Godot **4.7.1 stable**, `uv`, and `just`; then run `just bootstrap` and `just check`. The locked `tools/` environment and root `dependencies.json` remain the sources of truth for tooling and Godot dependencies. Do not commit generated `addons/gut/`, `.godot/`, reports, or build output, and do not manually edit `tools/uv.lock`.
 
-Install Godot **4.7.1 stable**, `uv`, and `just`. If Godot is not on PATH, set `GODOT_BIN` to its
-executable. Run `just bootstrap` followed by `just check`.
+## Layer-2 contribution rules
 
-Bootstrap lets uv create `tools/.venv` from the committed lockfile, then installs the
-SHA-256-verified Godot/project dependencies declared in root `dependencies.json`. It is safe to
-rerun. Generated directories such as `addons/gut/` must never be committed.
+- Inspect adjacent domain code and GUT tests before editing. Use TDD for deterministic behavior and regression fixes where practical.
+- Keep authoritative shared state in `src/domain/`/`src/game/`, not `TileMapLayer`, Nodes, UI, or renderer state. Presentation observes and renders it.
+- Clients submit intents. Only the host/local authority validates mutations, inventory results, crafting, persistence, and weather.
+- Use explicit seeds and stable logical IDs for generated, saved, and networked data. Avoid global randomness and instance IDs in persistent contracts.
+- Keep dependencies pinned; do not silently upgrade Godot, GUT, gdtoolkit, or Python tooling.
+- Run `just check`; run `just export-windows` for release-facing changes. Network changes must also keep `just network-smoke` green.
 
-## Daily commands
-
-`just format` and `just format-check` cover Ruff-formatted Python and first-party GDScript.
-`just lint` runs Ruff and gdtoolkit. `just test` runs Pytest plus GUT and writes JUnit reports.
-`just check` also performs Godot import and a headless smoke test; CI additionally runs Windows
-export. `just hooks-install` is an explicit optional local convenience; `just hooks-run` runs the
-fast hook gate over all files.
-
-## Dependency policy
-
-`dependencies.json` owns manifest-managed Godot/project dependencies such as GUT.
-`tools/pyproject.toml` and generated `tools/uv.lock` own Python developer tooling. Updating GUT
-changes the manifest; updating Ruff changes the tools project and regenerated lockfile. Do not
-manually edit `uv.lock`, silently upgrade Godot/GUT/gdtoolkit, or commit generated dependencies.
-
-## Testing and PR discipline
-
-Run `just check` before opening a pull request. Keep changes focused and document any validation
-that cannot run. TDD is strongly preferred for deterministic logic and bug fixes.
+Avoid speculative frameworks, global event buses, ECS/DI systems, and empty extension points. This template intentionally excludes enemies, combat, quests, technology trees, and production content until a derived game has a concrete requirement.

@@ -1,14 +1,19 @@
 # Architecture
 
-This starter deliberately imposes no gameplay architecture. Its boundaries are:
+## Ownership and boundaries
 
-- `src/` and `scenes/`: first-party Godot runtime code and executable scenes;
-- `tests/`: GUT tests for Godot code;
-- `dependencies.json`: exact manifest-managed Godot/project dependency pins;
-- `addons/gut/`: generated third-party Godot development code, excluded from first-party checks;
-- `tools/`: isolated uv-managed Python development-tool project and its Pytest suite;
-- `justfile`: thin repository-level developer-command facade;
-- `.github/workflows/ci.yml`: CI orchestration over the same `godot-dev` commands.
+The canonical finite world, inventory, recipes, and weather are `RefCounted` domain values. A `WorldState` stores tiles in chunk-keyed dictionaries and exposes integer tile coordinates. It does not know about Nodes or rendering. `WorldCoordinates` is the small conversion boundary: it maps a tile to its 16px world-space center and maps a world point to its containing tile. Player spawning starts from that center and applies the documented player-body floor-clearance offset. `WorldView` projects each state tile to a `TileMapLayer` cell whose runtime tile definition supplies both placeholder pixels and collision. Collision polygons are centered on the TileMap cell origin, matching the visual cell exactly; individual tile changes update one cell rather than rebuilding the world. `WeatherView` is a screen-space `CanvasLayer` projection that reads the world only to determine exposed columns. Presentation is replaceable and never queried for truth.
 
-`src/bootstrap/` exists solely to prove project-owned code loads and executes. It is not a
-framework and should be removed or replaced when real game code starts.
+`SandboxAuthority` is the narrow application boundary for mine, place, and craft operations. It checks bounds, reach, tile rules, available inventory, and station capability before making an atomic mutation. A local player calls that same authority. A multiplayer client sends an intent to the host; the host applies the authority operation and replicates its result.
+
+## World and generation
+
+`WorldConfig` owns dimensions, chunk size (16), and the starter 16px render scale. `WorldGenerator` uses explicit seed/configuration and versioned coordinate-derived values, so generation is repeatable regardless of unrelated runtime randomness. The small playable world is fully resident; the chunk boundary is a future finite-world storage/render/synchronization seam, not streaming.
+
+## Persistence and multiplayer
+
+`SaveStore` writes versioned inspectable JSON containing world configuration/seed/tile records, spawn, inventory, and weather. It validates the complete supported schema and semantics before constructing domain state: structural bounds, positions, stable tile/item/weather IDs, duplicate records, and inventory limits are all rejected rather than normalized. Version 1 incorporates these unreleased corrections; no migration is needed for transient branch saves. Natural `tile:stone` and player-built `tile:stone_block` are distinct stable IDs with corresponding raw-stone and stone-block drops. The initial implementation saves full tile records for clarity; future chunk-delta persistence may replace that representation while retaining stable IDs and version migration.
+
+`WorldState.is_exposed_to_sky(tile)` applies the starter shelter rule: a tile is exposed only when there is no solid tile vertically above it. `WeatherView` is a screen-space `CanvasLayer` effect: it observes `WorldState.tile_changed`, reconnects safely whenever a loaded world replaces the old one, and also invalidates when the viewport canvas transform changes. Stable screen-space rain samples map through the inverse current transform to find their world columns; solid obstructions then map back to screen space to clip each final streak. The screen-space background is behind the world, while weather and HUD are in the foreground. Hard spawn/load teleports reset `Camera2D` smoothing before weather binds; normal camera movement retains smoothing. Weather does not create physics objects for rain.
+
+The loopback ENet smoke starts separate headless host and client processes. The client creates a `TileActionCodec` mine intent, the host uses `AuthoritativeTileTransport` to validate/mutate through authority and encode the update, and the client applies that update through the same transport adapter before acknowledging convergence. It is deliberately a minimal transport adapter proof, not lockstep, matchmaking, or an Internet multiplayer solution.

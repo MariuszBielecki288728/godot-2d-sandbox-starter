@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="Godot Engineering Starter"
+config/name="Godot 2D Sandbox Starter"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.7")
 
@@ -25,8 +25,50 @@ gdscript/warnings/unsafe_method_access=2
 
 window/size/viewport_width=640
 window/size/viewport_height=360
+window/size/window_width_override=1280
+window/size/window_height_override=720
+
+[input]
+
+move_left={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":65)]
+}
+move_right={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":68)]
+}
+jump={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":32)]
+}
+mine={
+"deadzone": 0.5,
+"events": [Object(InputEventMouseButton,"button_index":1)]
+}
+place={
+"deadzone": 0.5,
+"events": [Object(InputEventMouseButton,"button_index":2)]
+}
+craft={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":67)]
+}
+select_next={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":81)]
+}
+save_world={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":75)]
+}
+load_world={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":76)]
+}
 
 [rendering]
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+textures/canvas_textures/default_texture_filter=0

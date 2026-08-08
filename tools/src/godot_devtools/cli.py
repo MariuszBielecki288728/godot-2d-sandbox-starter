@@ -6,7 +6,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from .dependencies import ensure_dependencies
-from .godot import export_windows, godot_check, launch, run, smoke
+from .godot import export_windows, godot_check, launch, network_smoke, run, smoke
 from .root import discover_repository_root
 from .testing import test_godot
 
@@ -61,6 +61,7 @@ def check(repo_root: Path) -> None:
     godot_check(repo_root)
     test_godot(repo_root)
     smoke(repo_root)
+    network_smoke(repo_root)
 
 
 def clean(repo_root: Path) -> None:
@@ -84,6 +85,7 @@ def parse_args() -> argparse.Namespace:
             "test-godot",
             "godot-check",
             "smoke",
+            "network-smoke",
             "check",
             "run",
             "export-windows",
@@ -107,6 +109,7 @@ def main() -> None:
         "test-godot": test_godot,
         "godot-check": godot_check,
         "smoke": smoke,
+        "network-smoke": network_smoke,
         "check": check,
         "run": launch,
         "export-windows": export_windows,
