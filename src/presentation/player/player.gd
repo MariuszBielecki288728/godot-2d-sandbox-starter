@@ -21,3 +21,20 @@ func tile_coordinate() -> Vector2i:
 		floori(global_position.x / WorldConfig.TILE_SIZE_PIXELS),
 		floori(global_position.y / WorldConfig.TILE_SIZE_PIXELS)
 	)
+
+
+func occupied_tiles() -> Array[Vector2i]:
+	var half_size := Vector2(6, 10)
+	var minimum := global_position - half_size
+	var maximum := global_position + half_size
+	var tiles: Array[Vector2i] = []
+	for y: int in range(
+		floori(minimum.y / WorldConfig.TILE_SIZE_PIXELS),
+		floori(maximum.y / WorldConfig.TILE_SIZE_PIXELS) + 1
+	):
+		for x: int in range(
+			floori(minimum.x / WorldConfig.TILE_SIZE_PIXELS),
+			floori(maximum.x / WorldConfig.TILE_SIZE_PIXELS) + 1
+		):
+			tiles.append(Vector2i(x, y))
+	return tiles

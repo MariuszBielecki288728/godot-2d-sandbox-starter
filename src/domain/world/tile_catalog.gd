@@ -23,13 +23,17 @@ static func definition(tile_id: StringName) -> TileDefinition:
 		ORE:
 			return TileDefinition.new(ORE, true, true, ITEM_ORE, Color("bf8f43"))
 		WORKBENCH:
-			return TileDefinition.new(WORKBENCH, true, false, StringName(), Color("9b6b35"))
+			return TileDefinition.new(WORKBENCH, true, true, ITEM_WORKBENCH, Color("9b6b35"))
 		_:
 			return TileDefinition.new(AIR, false, false, StringName(), Color.TRANSPARENT)
 
 
 static func is_known(tile_id: StringName) -> bool:
 	return tile_id in [AIR, DIRT, STONE, ORE, WORKBENCH]
+
+
+static func is_known_item(item_id: StringName) -> bool:
+	return item_id in [ITEM_DIRT, ITEM_STONE, ITEM_ORE, ITEM_STONE_BLOCK, ITEM_WORKBENCH]
 
 
 static func tile_for_item(item_id: StringName) -> StringName:

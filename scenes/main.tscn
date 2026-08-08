@@ -18,21 +18,15 @@ offset_bottom = 360.0
 color = Color(0.32, 0.62, 0.82, 1)
 mouse_filter = 2
 
-[node name="WorldView" type="Node2D" parent="."]
+[node name="WorldView" type="TileMapLayer" parent="."]
 script = ExtResource("2_world")
-
-[node name="Ground" type="StaticBody2D" parent="."]
-position = Vector2(512, 368)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
-shape = SubResource("RectangleShape2D_ground")
 
 [node name="Player" parent="." instance=ExtResource("3_player")]
 
-[node name="WeatherView" type="Node2D" parent="."]
-script = ExtResource("4_weather")
-
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="WeatherView" type="Node2D" parent="CanvasLayer"]
+script = ExtResource("4_weather")
 
 [node name="Hud" type="Label" parent="CanvasLayer"]
 offset_left = 8.0

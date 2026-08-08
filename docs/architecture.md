@@ -2,7 +2,7 @@
 
 ## Ownership and boundaries
 
-The canonical finite world, inventory, recipes, and weather are `RefCounted` domain values. A `WorldState` stores tiles in chunk-keyed dictionaries and exposes integer tile coordinates. It does not know about Nodes or rendering. `WorldView` and `WeatherView` observe that state and draw placeholder pixels; the view is replaceable and never queried for truth.
+The canonical finite world, inventory, recipes, and weather are `RefCounted` domain values. A `WorldState` stores tiles in chunk-keyed dictionaries and exposes integer tile coordinates. It does not know about Nodes or rendering. `WorldView` projects each state tile to a `TileMapLayer` cell whose runtime tile definition supplies both placeholder pixels and collision; individual tile changes update one cell rather than rebuilding the world. `WeatherView` is a screen-space `CanvasLayer` projection. Presentation is replaceable and never queried for truth.
 
 `SandboxAuthority` is the narrow application boundary for mine, place, and craft operations. It checks bounds, reach, tile rules, available inventory, and station capability before making an atomic mutation. A local player calls that same authority. A multiplayer client sends an intent to the host; the host applies the authority operation and replicates its result.
 

@@ -54,6 +54,10 @@ craft={
 "deadzone": 0.5,
 "events": [Object(InputEventKey,"physical_keycode":67)]
 }
+select_next={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":81)]
+}
 save_world={
 "deadzone": 0.5,
 "events": [Object(InputEventKey,"physical_keycode":4194323)]

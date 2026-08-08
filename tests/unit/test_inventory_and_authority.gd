@@ -55,3 +55,61 @@ func test_weather_accepts_only_stable_known_states() -> void:
 	assert_true(weather.set_kind(WeatherState.RAIN))
 	assert_false(weather.set_kind(&"weather:acid_rain"))
 	assert_eq(weather.kind, WeatherState.RAIN)
+
+
+func test_workbench_can_be_placed_then_mined_for_its_item() -> void:
+	var world := WorldState.new(WorldConfig.new(8, 8))
+	var inventory := Inventory.new()
+	inventory.add(TileCatalog.ITEM_WORKBENCH, 1)
+	var authority := SandboxAuthority.new(world, inventory, WeatherState.new())
+
+	assert_true(
+		authority.place(Vector2i(1, 1), Vector2i(2, 1), TileCatalog.ITEM_WORKBENCH).succeeded
+	)
+	assert_true(authority.mine(Vector2i(1, 1), Vector2i(2, 1)).succeeded)
+	assert_eq(world.get_tile(Vector2i(2, 1)), TileCatalog.AIR)
+	assert_eq(inventory.count(TileCatalog.ITEM_WORKBENCH), 1)
+
+
+func test_placement_overlapping_player_tiles_is_atomic() -> void:
+	var world := WorldState.new(WorldConfig.new(8, 8))
+	var inventory := Inventory.new()
+	inventory.add(TileCatalog.ITEM_STONE_BLOCK, 1)
+	var authority := SandboxAuthority.new(world, inventory, WeatherState.new())
+
+	var result := authority.place(
+		Vector2i(1, 1), Vector2i(2, 1), TileCatalog.ITEM_STONE_BLOCK, [Vector2i(2, 1)]
+	)
+	assert_false(result.succeeded)
+	assert_eq(result.reason, SandboxAuthority.OCCUPIED_TARGET)
+	assert_eq(world.get_tile(Vector2i(2, 1)), TileCatalog.AIR)
+	assert_eq(inventory.count(TileCatalog.ITEM_STONE_BLOCK), 1)
+
+
+func test_multiplayer_codec_rejects_malformed_messages() -> void:
+	var codec := TileActionCodec.new()
+	assert_false(codec.decode("not json".to_utf8_buffer())["ok"])
+	assert_false(codec.decode('{"type":"mine","target":{}}'.to_utf8_buffer())["ok"])
+	assert_false(
+		(
+			codec
+			. decode(
+				'{"type":"tile_update","position":{"x":1,"y":1},"id":"tile:nope"}'.to_utf8_buffer()
+			)["ok"]
+		)
+	)
+
+
+func test_crafted_stone_block_can_be_consumed_for_placement() -> void:
+	var world := WorldState.new(WorldConfig.new(8, 8))
+	world.set_tile(Vector2i(2, 1), TileCatalog.WORKBENCH)
+	var inventory := Inventory.new()
+	inventory.add(TileCatalog.ITEM_STONE, 2)
+	var authority := SandboxAuthority.new(world, inventory, WeatherState.new())
+
+	assert_true(authority.craft_at(Vector2i(1, 1), CraftingService.stone_block_recipe()).succeeded)
+	assert_true(
+		authority.place(Vector2i(1, 1), Vector2i(3, 1), TileCatalog.ITEM_STONE_BLOCK).succeeded
+	)
+	assert_eq(inventory.count(TileCatalog.ITEM_STONE_BLOCK), 0)
+	assert_eq(world.get_tile(Vector2i(3, 1)), TileCatalog.STONE)

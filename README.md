@@ -23,6 +23,7 @@ Requirements are Godot **4.7.1 stable** (standard GDScript build), `uv`, and `ju
 | Left mouse | Mine a nearby tile |
 | Right mouse | Place the starting workbench |
 | C | Craft a stone block when beside a workbench |
+| Q | Cycle the selected placeable inventory item |
 | F5 / F9 | Save / load `user://sandbox-save.json` |
 
 The initial weather is rain so the boundary is visible. Place the workbench near the player, mine stone, and press C to create a placeable stone block. The HUD is only a view of the domain inventory and weather; it does not own any gameplay state.

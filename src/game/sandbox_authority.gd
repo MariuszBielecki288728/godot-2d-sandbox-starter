@@ -7,6 +7,7 @@ const OUT_OF_RANGE: StringName = &"out_of_range"
 const INVALID_TARGET: StringName = &"invalid_target"
 const INSUFFICIENT_ITEMS: StringName = &"insufficient_items"
 const MISSING_CAPABILITY: StringName = &"missing_capability"
+const OCCUPIED_TARGET: StringName = &"occupied_target"
 
 var world: WorldState
 var inventory: Inventory
@@ -32,12 +33,19 @@ func mine(player_tile: Vector2i, target: Vector2i) -> ActionResult:
 	return ActionResult.new(true, OK)
 
 
-func place(player_tile: Vector2i, target: Vector2i, item_id: StringName) -> ActionResult:
+func place(
+	player_tile: Vector2i,
+	target: Vector2i,
+	item_id: StringName,
+	occupied_tiles: Array[Vector2i] = []
+) -> ActionResult:
 	if not _within_reach(player_tile, target) or not world.is_in_bounds(target):
 		return ActionResult.new(false, OUT_OF_RANGE)
 	var tile_id := TileCatalog.tile_for_item(item_id)
 	if tile_id == TileCatalog.AIR or world.get_tile(target) != TileCatalog.AIR:
 		return ActionResult.new(false, INVALID_TARGET)
+	if target in occupied_tiles:
+		return ActionResult.new(false, OCCUPIED_TARGET)
 	if not inventory.remove(item_id, 1):
 		return ActionResult.new(false, INSUFFICIENT_ITEMS)
 	world.set_tile(target, tile_id)
