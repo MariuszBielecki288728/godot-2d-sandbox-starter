@@ -1,0 +1,23 @@
+# Godot-generated import and editor state.
+.godot/
+bootstrap.prompt
+
+# Development tooling output.
+tools/.venv/
+build/
+reports/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+repomix-output*.xml
+repomix-output*.txt
+
+# Generated third-party development dependencies.
+addons/gut/
+
+# OS/editor temporary files.
+.DS_Store
+Thumbs.db
+.vscode/
+*.swp

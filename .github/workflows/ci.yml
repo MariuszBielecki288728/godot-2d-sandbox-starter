@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.12.3"
+          python-version: "3.12"
+
+      - name: Install Godot 4.7.1
+        shell: bash
+        run: |
+          godot_dir="$RUNNER_TEMP/godot-4.7.1"
+          mkdir -p "$godot_dir"
+          curl --fail --location --silent --show-error --output "$godot_dir/godot.zip" https://github.com/godotengine/godot/releases/download/4.7.1-stable/Godot_v4.7.1-stable_linux.x86_64.zip
+          unzip -q "$godot_dir/godot.zip" -d "$godot_dir"
+          godot_bin="$godot_dir/Godot_v4.7.1-stable_linux.x86_64"
+          chmod +x "$godot_bin"
+          echo "GODOT_BIN=$godot_bin" >> "$GITHUB_ENV"
+
+          template_extract_dir="$RUNNER_TEMP/godot-4.7.1-templates"
+          template_destination="$HOME/.local/share/godot/export_templates/4.7.1.stable"
+          curl --fail --location --silent --show-error --output "$RUNNER_TEMP/templates.tpz" https://github.com/godotengine/godot/releases/download/4.7.1-stable/Godot_v4.7.1-stable_export_templates.tpz
+          unzip -q "$RUNNER_TEMP/templates.tpz" -d "$template_extract_dir"
+          mkdir -p "$template_destination"
+          cp -a "$template_extract_dir/templates/." "$template_destination/"
+          test -f "$template_destination/windows_debug_x86_64.exe"
+
+      - name: Verify tool versions
+        run: |
+          "$GODOT_BIN" --version
+          uv --version
+          uv run --project tools --locked python --version
+
+      - name: Bootstrap development tooling
+        run: uv run --project tools --locked godot-dev deps
+      - name: Format check
+        run: uv run --project tools --locked godot-dev format-check
+      - name: Lint
+        run: uv run --project tools --locked godot-dev lint
+      - name: Python tests
+        run: uv run --project tools --locked godot-dev test-python
+      - name: Godot project check
+        run: uv run --project tools --locked godot-dev godot-check
+      - name: Godot tests
+        run: uv run --project tools --locked godot-dev test-godot
+      - name: Headless smoke test
+        run: uv run --project tools --locked godot-dev smoke
+      - name: Windows export smoke test
+        run: uv run --project tools --locked godot-dev export-windows
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: junit-reports
+          path: reports/*.xml
+          if-no-files-found: warn
