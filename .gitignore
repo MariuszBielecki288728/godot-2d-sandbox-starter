@@ -1,5 +1,6 @@
 # Godot-generated import and editor state.
 .godot/
+*.import
 *.prompt
 
 # Development tooling output.
