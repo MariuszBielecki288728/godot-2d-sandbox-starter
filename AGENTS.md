@@ -24,6 +24,8 @@ Prefer small typed `RefCounted`/`Resource` values over scene objects for domain 
 
 ## Tooling and validation
 
+Do not broaden CI to every feature-branch push when PR CI already covers those branches. Preserve full PR validation; save runner time through cancellation, cache keys tied to immutable versions/locks/manifests, cheap-first ordering, and short-lived failure artifactsâ€”never skipped checks. Keep ordinary validation on the pinned Linux runner and cross-export Windows from Linux unless a real Windows-specific test requires otherwise. Do not add CI matrices or extra hosted-runner jobs without measurement, and never treat a cache as integrity validation.
+
 Gameplay/project code belongs outside `tools/`; `tools/` is the isolated Python development subsystem. `dependencies.json` is the source of truth for manifest-managed dependencies, while `tools/pyproject.toml` plus generated `tools/uv.lock` define Python tooling. Never manually edit `uv.lock`, silently upgrade Godot/GUT/gdtoolkit, or commit generated dependency/cache/build output.
 
 Run `just check` before declaring normal implementation work complete; it includes GUT, scene, and loopback ENet smoke validation. Run `just export-windows` when the task requires export validation. Fix root causes—never disable tests, weaken linting, blanket-suppress warnings, or remove assertions merely to obtain green CI.
