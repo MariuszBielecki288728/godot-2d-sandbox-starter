@@ -74,3 +74,76 @@ func test_variant_inputs_include_position_seed_and_layer() -> void:
 	assert_gt(positions.size(), 1)
 	assert_gt(seeds.size(), 1)
 	assert_true(layers_differ)
+
+
+func test_catalog_validation_rejects_solid_variant_without_collision() -> void:
+	var catalog := _catalog_with_variants(TileCatalog.DIRT, WorldLayer.FOREGROUND, [false])
+
+	var errors := catalog.validate()
+
+	assert_string_contains(" ".join(errors), "Solid presentation variant lacks collision")
+	assert_string_contains(" ".join(errors), "tile:dirt")
+
+
+func test_catalog_validation_rejects_non_solid_variant_with_collision() -> void:
+	var catalog := _catalog_with_variants(TileCatalog.STONE_WALL, WorldLayer.BACKGROUND, [true])
+
+	var errors := catalog.validate()
+
+	assert_string_contains(" ".join(errors), "Non-solid presentation variant contains collision")
+	assert_string_contains(" ".join(errors), "wall:stone")
+
+
+func test_catalog_validation_checks_every_variant_for_collision() -> void:
+	var catalog := _catalog_with_variants(
+		TileCatalog.DIRT, WorldLayer.FOREGROUND, [true, true, false]
+	)
+
+	var errors := catalog.validate()
+
+	assert_string_contains(" ".join(errors), "Solid presentation variant lacks collision")
+	assert_string_contains(" ".join(errors), "cell=(2, 0)")
+
+
+func test_catalog_validation_requires_a_participating_physics_layer() -> void:
+	var catalog := _catalog_with_variants(TileCatalog.DIRT, WorldLayer.FOREGROUND, [true])
+	catalog.tile_set.set_physics_layer_collision_layer(0, 0)
+
+	var errors := catalog.validate()
+
+	assert_string_contains(" ".join(errors), "Solid presentation variant lacks collision")
+
+
+func _catalog_with_variants(
+	semantic_id: StringName, layer: StringName, collisions: Array[bool]
+) -> TilePresentationCatalog:
+	var catalog := TilePresentationCatalog.new()
+	var tile_set := TileSet.new()
+	tile_set.tile_size = Vector2i(16, 16)
+	tile_set.add_physics_layer()
+	tile_set.set_physics_layer_collision_layer(0, 1)
+	var atlas := TileSetAtlasSource.new()
+	atlas.texture = (CATALOG.tile_set.get_source(0) as TileSetAtlasSource).texture
+	atlas.texture_region_size = Vector2i(16, 16)
+	for index: int in collisions.size():
+		atlas.create_tile(Vector2i(index, 0))
+	tile_set.add_source(atlas, 0)
+	for index: int in collisions.size():
+		if collisions[index]:
+			var tile_data := atlas.get_tile_data(Vector2i(index, 0), 0)
+			tile_data.set_collision_polygons_count(0, 1)
+			tile_data.set_collision_polygon_points(0, 0, _square())
+	var definition := TilePresentationDefinition.new()
+	definition.semantic_id = semantic_id
+	definition.layer = layer
+	for index: int in collisions.size():
+		var variant := TileVisualVariant.new()
+		variant.atlas_coordinates = Vector2i(index, 0)
+		definition.variants.append(variant)
+	catalog.tile_set = tile_set
+	catalog.definitions = [definition]
+	return catalog
+
+
+func _square() -> PackedVector2Array:
+	return PackedVector2Array([Vector2(-8, -8), Vector2(8, -8), Vector2(8, 8), Vector2(-8, 8)])

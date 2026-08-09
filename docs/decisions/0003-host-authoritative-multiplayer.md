@@ -6,7 +6,7 @@ Accepted.
 
 ## Decision
 
-Clients submit intents; the host owns canonical mutations, inventory/crafting outcomes, weather, and persistence. Single-player invokes the same `SandboxAuthority` locally. ENet is used for the starter loopback transport smoke.
+Clients submit intents; the host owns canonical mutations, inventory/crafting outcomes, weather, and persistence. Intent packets never provide player position or any other value used to validate that sender's own action. The host/session resolves those values from host-owned state and supplies them to `SandboxAuthority`; single-player invokes that same authority locally. ENet is used for the starter loopback transport smoke with a fixed host-owned player tile, intentionally without player replication.
 
 ## Consequences
 

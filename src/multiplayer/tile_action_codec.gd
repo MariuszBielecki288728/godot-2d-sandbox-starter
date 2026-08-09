@@ -2,19 +2,10 @@ class_name TileActionCodec
 extends RefCounted
 
 
-func mine_intent(
-	player_tile: Vector2i, target: Vector2i, layer: StringName = WorldLayer.FOREGROUND
-) -> PackedByteArray:
+func mine_intent(target: Vector2i, layer: StringName = WorldLayer.FOREGROUND) -> PackedByteArray:
 	return (
 		JSON
-		. stringify(
-			{
-				"type": "mine",
-				"layer": String(layer),
-				"player": _data(player_tile),
-				"target": _data(target)
-			}
-		)
+		. stringify({"type": "mine", "layer": String(layer), "target": _data(target)})
 		. to_utf8_buffer()
 	)
 
@@ -43,21 +34,20 @@ func decode(packet: PackedByteArray) -> Dictionary:
 	var data: Dictionary = json.data
 	if (
 		data.get("type") == "mine"
+		and _has_exact_keys(data, ["type", "layer", "target"])
 		and _is_layer(data.get("layer"))
-		and _is_coordinate(data.get("player"))
 		and _is_coordinate(data.get("target"))
 	):
-		var player: Dictionary = data["player"]
 		var target: Dictionary = data["target"]
 		return {
 			"ok": true,
 			"type": &"mine",
 			"layer": StringName(data["layer"]),
-			"player": _coordinate(player),
 			"target": _coordinate(target)
 		}
 	if (
 		data.get("type") == "tile_update"
+		and _has_exact_keys(data, ["type", "layer", "position", "id"])
 		and _is_layer(data.get("layer"))
 		and _is_coordinate(data.get("position"))
 	):
@@ -80,6 +70,15 @@ func _is_coordinate(value: Variant) -> bool:
 		return false
 	var coordinate: Dictionary = value
 	return _is_integer(coordinate.get("x")) and _is_integer(coordinate.get("y"))
+
+
+func _has_exact_keys(data: Dictionary, expected: Array[String]) -> bool:
+	if data.size() != expected.size():
+		return false
+	for key: String in expected:
+		if not data.has(key):
+			return false
+	return true
 
 
 func _coordinate(data: Dictionary) -> Vector2i:

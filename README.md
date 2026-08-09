@@ -39,6 +39,8 @@ Presentation is project-owned data: `assets/tiles/placeholder_tiles.svg`, `resou
 
 Background walls are persistent buildable sandbox cells behind foreground terrain; they are not scenic sky/cloud/dune backgrounds and have no physics or rain-shelter meaning. Scenic/parallax presentation remains a future presentation-only system.
 
+When adding a new semantic tile and atlas/TileSet mapping, define its semantic tile first, configure every visual variant, then configure each TileSet cell's physics to match semantic solidity and run `just check`. Catalog validation rejects a solid variant without effective collision and a non-solid variant with collision; background walls are always non-solid.
+
 World generation uses the explicit seed, configuration, and a versioned deterministic generator. Chunk coordinates are a storage concern now and a future render/persistence/network partition seam; no streaming system is implied. See [docs/architecture.md](docs/architecture.md) and the ADRs for the fuller rationale.
 
 ## Commands

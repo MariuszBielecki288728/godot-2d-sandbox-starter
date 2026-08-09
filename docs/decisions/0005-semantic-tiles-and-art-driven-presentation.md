@@ -10,7 +10,7 @@ Hand-authored atlases need multiple visual cells for one gameplay tile, while sa
 
 ## Consequences
 
-Artists can change the atlas, TileSet, and catalog without changing mining, crafting, saves, or protocol identities. Invalid catalog definitions fail validation during development. A TileSet owns foreground full-cell collision; background variants intentionally have none.
+Artists can change the atlas, TileSet, and catalog without changing mining, crafting, saves, or protocol identities. Invalid catalog definitions fail validation during development. Semantic solidity remains owned by `TileCatalog`; TileSet collision is its projection. Every mapped visual variant must have effective collision if and only if its semantic tile is solid, and catalog validation rejects mismatches. Background wall variants are semantic non-solids and therefore must not carry collision.
 
 ## Non-goals
 
