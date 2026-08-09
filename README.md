@@ -4,6 +4,8 @@ An AI-friendly reusable GitHub template for finite, side-view, tile-based 2D san
 
 It is an engineering foundation, not a finished game or content pack. All tile visuals and content (`dirt`, `stone`, `ore`, and `workbench`) are deliberately generic placeholders. This repository deliberately does not include combat, enemies, quests, a technology tree, lore, production artwork, or online-service infrastructure.
 
+![SCREENSHOT](docs/screenshot.png)
+
 ## Quick start
 
 ```text
