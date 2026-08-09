@@ -1,0 +1,70 @@
+[gd_resource type="Resource" load_steps=17 format=3]
+
+[ext_resource type="Script" path="res://src/presentation/tiles/tile_presentation_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" path="res://src/presentation/tiles/tile_presentation_definition.gd" id="2_definition"]
+[ext_resource type="Script" path="res://src/presentation/tiles/tile_visual_variant.gd" id="3_variant"]
+[ext_resource type="TileSet" path="res://resources/tiles/sandbox_tileset.tres" id="4_tileset"]
+
+[sub_resource type="Resource" id="V_dirt_0"]
+script = ExtResource("3_variant")
+atlas_coordinates = Vector2i(0, 0)
+[sub_resource type="Resource" id="V_dirt_1"]
+script = ExtResource("3_variant")
+atlas_coordinates = Vector2i(1, 0)
+[sub_resource type="Resource" id="V_dirt_2"]
+script = ExtResource("3_variant")
+atlas_coordinates = Vector2i(2, 0)
+[sub_resource type="Resource" id="V_dirt_3"]
+script = ExtResource("3_variant")
+atlas_coordinates = Vector2i(3, 0)
+[sub_resource type="Resource" id="V_stone"]
+script = ExtResource("3_variant")
+atlas_coordinates = Vector2i(4, 0)
+[sub_resource type="Resource" id="V_block"]
+script = ExtResource("3_variant")
+atlas_coordinates = Vector2i(5, 0)
+[sub_resource type="Resource" id="V_ore"]
+script = ExtResource("3_variant")
+atlas_coordinates = Vector2i(6, 0)
+[sub_resource type="Resource" id="V_workbench"]
+script = ExtResource("3_variant")
+atlas_coordinates = Vector2i(7, 0)
+[sub_resource type="Resource" id="V_wall"]
+script = ExtResource("3_variant")
+atlas_coordinates = Vector2i(8, 0)
+
+[sub_resource type="Resource" id="D_dirt"]
+script = ExtResource("2_definition")
+semantic_id = &"tile:dirt"
+layer = &"world_layer:foreground"
+variants = [SubResource("V_dirt_0"), SubResource("V_dirt_1"), SubResource("V_dirt_2"), SubResource("V_dirt_3")]
+[sub_resource type="Resource" id="D_stone"]
+script = ExtResource("2_definition")
+semantic_id = &"tile:stone"
+layer = &"world_layer:foreground"
+variants = [SubResource("V_stone")]
+[sub_resource type="Resource" id="D_block"]
+script = ExtResource("2_definition")
+semantic_id = &"tile:stone_block"
+layer = &"world_layer:foreground"
+variants = [SubResource("V_block")]
+[sub_resource type="Resource" id="D_ore"]
+script = ExtResource("2_definition")
+semantic_id = &"tile:ore"
+layer = &"world_layer:foreground"
+variants = [SubResource("V_ore")]
+[sub_resource type="Resource" id="D_workbench"]
+script = ExtResource("2_definition")
+semantic_id = &"tile:workbench"
+layer = &"world_layer:foreground"
+variants = [SubResource("V_workbench")]
+[sub_resource type="Resource" id="D_wall"]
+script = ExtResource("2_definition")
+semantic_id = &"wall:stone"
+layer = &"world_layer:background"
+variants = [SubResource("V_wall")]
+
+[resource]
+script = ExtResource("1_catalog")
+tile_set = ExtResource("4_tileset")
+definitions = [SubResource("D_dirt"), SubResource("D_stone"), SubResource("D_block"), SubResource("D_ore"), SubResource("D_workbench"), SubResource("D_wall")]

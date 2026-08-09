@@ -1,7 +1,7 @@
 class_name SaveStore
 extends RefCounted
 
-const FORMAT_VERSION: int = 1
+const FORMAT_VERSION: int = 2
 const MAX_WORLD_DIMENSION: int = 4096
 const MAX_INVENTORY_SLOTS: int = 64
 const MAX_STACK_LIMIT: int = 9999
@@ -84,12 +84,15 @@ static func _is_valid_world_data(data: Dictionary) -> bool:
 			return false
 		if not _is_coordinate(tile_record) or typeof(tile_record["id"]) != TYPE_STRING:
 			return false
+		if typeof(tile_record.get("layer")) != TYPE_STRING:
+			return false
+		var layer := StringName(tile_record["layer"])
 		var tile_id := StringName(tile_record["id"])
-		if tile_id == TileCatalog.AIR or not TileCatalog.is_known(tile_id):
+		if tile_id == TileCatalog.AIR or not TileCatalog.is_known_for_layer(tile_id, layer):
 			return false
 		if not _is_in_bounds(tile_record, width, height):
 			return false
-		var coordinate := Vector2i(int(tile_record["x"]), int(tile_record["y"]))
+		var coordinate := "%s|%s|%s" % [layer, tile_record["x"], tile_record["y"]]
 		if positions.has(coordinate):
 			return false
 		positions[coordinate] = true

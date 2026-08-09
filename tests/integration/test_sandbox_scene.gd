@@ -68,14 +68,14 @@ func test_rejected_load_keeps_the_live_authority_and_world_unchanged() -> void:
 func test_player_spawns_at_the_canonical_tile_center_and_settles_in_spawn_tile() -> void:
 	var scene_instance: SandboxMain = MAIN_SCENE.instantiate()
 	add_child_autofree(scene_instance)
-	await get_tree().process_frame
 	var player: SandboxPlayer = scene_instance.get_node("Player")
 	var spawn_tile := scene_instance.get_authority().world.spawn_tile
+	assert_eq(player.global_position, SandboxPlayer.spawn_position(spawn_tile))
+	await get_tree().process_frame
 	var floor_y := scene_instance.get_authority().world.first_solid_y_at_or_below(
 		spawn_tile.x, spawn_tile.y + 1
 	)
 
-	assert_lt(player.global_position.distance_to(SandboxPlayer.spawn_position(spawn_tile)), 1.0)
 	assert_eq(player.tile_coordinate(), spawn_tile)
 	assert_lte(
 		player.global_position.y + SandboxPlayer.BODY_HALF_HEIGHT,

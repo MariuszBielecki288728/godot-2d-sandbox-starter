@@ -21,14 +21,20 @@ func _init(state: WorldState, player_inventory: Inventory, weather_state: Weathe
 
 
 func mine(player_tile: Vector2i, target: Vector2i) -> ActionResult:
+	return mine_in_layer(WorldLayer.FOREGROUND, player_tile, target)
+
+
+func mine_in_layer(layer: StringName, player_tile: Vector2i, target: Vector2i) -> ActionResult:
 	if not _within_reach(player_tile, target) or not world.is_in_bounds(target):
 		return ActionResult.new(false, OUT_OF_RANGE)
-	var definition := TileCatalog.definition(world.get_tile(target))
+	if not WorldLayer.is_known(layer):
+		return ActionResult.new(false, INVALID_TARGET)
+	var definition := TileCatalog.definition(world.get_tile_in_layer(layer, target))
 	if not definition.is_mineable:
 		return ActionResult.new(false, INVALID_TARGET)
 	if not inventory.can_add(definition.drop_item_id, 1):
 		return ActionResult.new(false, INSUFFICIENT_ITEMS)
-	world.set_tile(target, TileCatalog.AIR)
+	world.set_tile_in_layer(layer, target, TileCatalog.AIR)
 	inventory.add(definition.drop_item_id, 1)
 	return ActionResult.new(true, OK)
 
@@ -39,16 +45,28 @@ func place(
 	item_id: StringName,
 	occupied_tiles: Array[Vector2i] = []
 ) -> ActionResult:
+	return place_in_layer(WorldLayer.FOREGROUND, player_tile, target, item_id, occupied_tiles)
+
+
+func place_in_layer(
+	layer: StringName,
+	player_tile: Vector2i,
+	target: Vector2i,
+	item_id: StringName,
+	occupied_tiles: Array[Vector2i] = []
+) -> ActionResult:
 	if not _within_reach(player_tile, target) or not world.is_in_bounds(target):
 		return ActionResult.new(false, OUT_OF_RANGE)
-	var tile_id := TileCatalog.tile_for_item(item_id)
-	if tile_id == TileCatalog.AIR or world.get_tile(target) != TileCatalog.AIR:
+	if not WorldLayer.is_known(layer):
 		return ActionResult.new(false, INVALID_TARGET)
-	if target in occupied_tiles:
+	var tile_id := TileCatalog.tile_for_item_in_layer(item_id, layer)
+	if tile_id == TileCatalog.AIR or world.get_tile_in_layer(layer, target) != TileCatalog.AIR:
+		return ActionResult.new(false, INVALID_TARGET)
+	if layer == WorldLayer.FOREGROUND and target in occupied_tiles:
 		return ActionResult.new(false, OCCUPIED_TARGET)
 	if not inventory.remove(item_id, 1):
 		return ActionResult.new(false, INSUFFICIENT_ITEMS)
-	world.set_tile(target, tile_id)
+	world.set_tile_in_layer(layer, target, tile_id)
 	return ActionResult.new(true, OK)
 
 

@@ -18,9 +18,13 @@ Any screen-space presentation derived from world coordinates must invalidate or 
 
 The host owns shared world, inventory/crafting results, weather, and saves. Clients request intents and never declare a mutation authoritative. Single-player goes through the same authority path. Randomness must be explicitly seeded or derived deterministically. IDs in saves and network messages must be stable semantic IDs, never array ordinals, resource paths alone, or instance IDs.
 
+Never encode atlas cells or cosmetic variant IDs in authoritative state; presentation mapping is Resource-driven and variants are deterministic, local-only resolution. Foreground and background-wall mutations are separate authoritative operations. Background walls never create physics or shelter and are distinct from scenic/parallax backgrounds. Keep future autotiling behind the presentation resolver, never in domain state or renderer match statements.
+
 Prefer small typed `RefCounted`/`Resource` values over scene objects for domain logic. Do not add an ECS, DI container, service locator, generic event bus, plugin framework, or speculative system. Do not add enemies, combat, quests, technology trees, or production art without explicit request.
 
 ## Tooling and validation
+
+Do not broaden CI to every feature-branch push when PR CI already covers those branches. Preserve full PR validation; save runner time through cancellation, cache keys tied to immutable versions/locks/manifests, cheap-first ordering, and short-lived failure artifactsâ€”never skipped checks. Keep ordinary validation on the pinned Linux runner and cross-export Windows from Linux unless a real Windows-specific test requires otherwise. Do not add CI matrices or extra hosted-runner jobs without measurement, and never treat a cache as integrity validation.
 
 Gameplay/project code belongs outside `tools/`; `tools/` is the isolated Python development subsystem. `dependencies.json` is the source of truth for manifest-managed dependencies, while `tools/pyproject.toml` plus generated `tools/uv.lock` define Python tooling. Never manually edit `uv.lock`, silently upgrade Godot/GUT/gdtoolkit, or commit generated dependency/cache/build output.
 

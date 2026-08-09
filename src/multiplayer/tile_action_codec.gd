@@ -2,18 +2,36 @@ class_name TileActionCodec
 extends RefCounted
 
 
-func mine_intent(player_tile: Vector2i, target: Vector2i) -> PackedByteArray:
+func mine_intent(
+	player_tile: Vector2i, target: Vector2i, layer: StringName = WorldLayer.FOREGROUND
+) -> PackedByteArray:
 	return (
 		JSON
-		. stringify({"type": "mine", "player": _data(player_tile), "target": _data(target)})
+		. stringify(
+			{
+				"type": "mine",
+				"layer": String(layer),
+				"player": _data(player_tile),
+				"target": _data(target)
+			}
+		)
 		. to_utf8_buffer()
 	)
 
 
-func tile_update(position: Vector2i, tile_id: StringName) -> PackedByteArray:
+func tile_update(
+	position: Vector2i, tile_id: StringName, layer: StringName = WorldLayer.FOREGROUND
+) -> PackedByteArray:
 	return (
 		JSON
-		. stringify({"type": "tile_update", "position": _data(position), "id": String(tile_id)})
+		. stringify(
+			{
+				"type": "tile_update",
+				"layer": String(layer),
+				"position": _data(position),
+				"id": String(tile_id)
+			}
+		)
 		. to_utf8_buffer()
 	)
 
@@ -25,6 +43,7 @@ func decode(packet: PackedByteArray) -> Dictionary:
 	var data: Dictionary = json.data
 	if (
 		data.get("type") == "mine"
+		and _is_layer(data.get("layer"))
 		and _is_coordinate(data.get("player"))
 		and _is_coordinate(data.get("target"))
 	):
@@ -33,15 +52,25 @@ func decode(packet: PackedByteArray) -> Dictionary:
 		return {
 			"ok": true,
 			"type": &"mine",
+			"layer": StringName(data["layer"]),
 			"player": _coordinate(player),
 			"target": _coordinate(target)
 		}
-	if data.get("type") == "tile_update" and _is_coordinate(data.get("position")):
+	if (
+		data.get("type") == "tile_update"
+		and _is_layer(data.get("layer"))
+		and _is_coordinate(data.get("position"))
+	):
 		var tile_id := StringName(data.get("id", ""))
-		if TileCatalog.is_known(tile_id):
+		var layer := StringName(data["layer"])
+		if TileCatalog.is_known_for_layer(tile_id, layer):
 			var position: Dictionary = data["position"]
 			return {
-				"ok": true, "type": &"tile_update", "position": _coordinate(position), "id": tile_id
+				"ok": true,
+				"type": &"tile_update",
+				"layer": layer,
+				"position": _coordinate(position),
+				"id": tile_id
 			}
 	return {"ok": false}
 
@@ -59,6 +88,10 @@ func _coordinate(data: Dictionary) -> Vector2i:
 
 func _data(position: Vector2i) -> Dictionary:
 	return {"x": position.x, "y": position.y}
+
+
+func _is_layer(value: Variant) -> bool:
+	return typeof(value) == TYPE_STRING and WorldLayer.is_known(StringName(value))
 
 
 func _is_integer(value: Variant) -> bool:

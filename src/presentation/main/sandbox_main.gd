@@ -19,6 +19,7 @@ func _ready() -> void:
 	var inventory := Inventory.new()
 	inventory.add(TileCatalog.ITEM_WORKBENCH, 1)
 	inventory.add(TileCatalog.ITEM_STONE, 4)
+	inventory.add(TileCatalog.ITEM_STONE_WALL, 4)
 	_authority = SandboxAuthority.new(world, inventory, WeatherState.new(WeatherState.RAIN))
 	_apply_authority("Place the workbench, mine stone, then press C to craft.")
 
@@ -30,12 +31,14 @@ func get_authority() -> SandboxAuthority:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"mine"):
 		_show_result(_authority.mine(_player.tile_coordinate(), _mouse_tile()))
-	elif event.is_action_pressed(&"place"):
+	elif event.is_action_pressed(&"mine_background"):
 		_show_result(
-			_authority.place(
-				_player.tile_coordinate(), _mouse_tile(), _selected_item, _player.occupied_tiles()
+			_authority.mine_in_layer(
+				WorldLayer.BACKGROUND, _player.tile_coordinate(), _mouse_tile()
 			)
 		)
+	elif event.is_action_pressed(&"place"):
+		_show_result(_place_selected())
 	elif event.is_action_pressed(&"select_next"):
 		_select_next_placeable()
 	elif event.is_action_pressed(&"craft"):
@@ -89,6 +92,7 @@ func _select_next_placeable() -> void:
 		TileCatalog.ITEM_WORKBENCH,
 		TileCatalog.ITEM_STONE_BLOCK,
 		TileCatalog.ITEM_DIRT,
+		TileCatalog.ITEM_STONE_WALL,
 	]
 	var current: int = placeable.find(_selected_item)
 	for offset: int in range(1, placeable.size() + 1):
@@ -97,3 +101,10 @@ func _select_next_placeable() -> void:
 			_selected_item = candidate
 			break
 	_hud.show_state(_authority, _selected_item, "Selected %s" % _selected_item)
+
+
+func _place_selected() -> ActionResult:
+	var layer := TileCatalog.layer_for_item(_selected_item)
+	return _authority.place_in_layer(
+		layer, _player.tile_coordinate(), _mouse_tile(), _selected_item, _player.occupied_tiles()
+	)

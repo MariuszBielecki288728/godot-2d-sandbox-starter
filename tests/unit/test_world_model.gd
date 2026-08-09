@@ -63,3 +63,26 @@ func test_sky_exposure_changes_when_a_solid_roof_is_placed_or_removed() -> void:
 	assert_false(world.is_exposed_to_sky(sheltered_tile))
 	world.set_tile(Vector2i(2, 2), TileCatalog.AIR)
 	assert_true(world.is_exposed_to_sky(sheltered_tile))
+
+
+func test_foreground_and_background_are_independent_chunked_layers() -> void:
+	var world := WorldState.new(WorldConfig.new(8, 8, 4))
+	var position := Vector2i(5, 3)
+
+	assert_true(world.set_foreground_tile(position, TileCatalog.DIRT))
+	assert_true(world.set_background_tile(position, TileCatalog.STONE_WALL))
+	assert_eq(world.chunk_coordinate(position), Vector2i(1, 0))
+	assert_eq(world.get_foreground_tile(position), TileCatalog.DIRT)
+	assert_eq(world.get_background_tile(position), TileCatalog.STONE_WALL)
+	assert_true(world.set_foreground_tile(position, TileCatalog.AIR))
+	assert_eq(world.get_background_tile(position), TileCatalog.STONE_WALL)
+
+
+func test_background_wall_does_not_block_sky_but_foreground_roof_does() -> void:
+	var world := WorldState.new(WorldConfig.new(8, 8))
+	var sheltered_tile := Vector2i(2, 3)
+
+	world.set_background_tile(Vector2i(2, 2), TileCatalog.STONE_WALL)
+	assert_true(world.is_exposed_to_sky(sheltered_tile))
+	world.set_foreground_tile(Vector2i(2, 2), TileCatalog.DIRT)
+	assert_false(world.is_exposed_to_sky(sheltered_tile))

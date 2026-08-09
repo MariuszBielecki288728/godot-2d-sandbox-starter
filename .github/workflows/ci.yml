@@ -1,16 +1,26 @@
 name: CI
 
+# PRs receive complete validation; main is revalidated after merge. Feature-branch
+# pushes intentionally do not duplicate an open PR's hosted-runner work.
 on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+# A newer revision makes an older run for the same PR/ref obsolete. The workflow
+# name keeps this group isolated from unrelated repository workflows.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -20,40 +30,56 @@ jobs:
         with:
           version: "0.12.3"
           python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: tools/uv.lock
 
-      - name: Install Godot 4.7.1
-        shell: bash
-        run: |
-          godot_dir="$RUNNER_TEMP/godot-4.7.1"
-          mkdir -p "$godot_dir"
-          curl --fail --location --silent --show-error --output "$godot_dir/godot.zip" https://github.com/godotengine/godot/releases/download/4.7.1-stable/Godot_v4.7.1-stable_linux.x86_64.zip
-          unzip -q "$godot_dir/godot.zip" -d "$godot_dir"
-          godot_bin="$godot_dir/Godot_v4.7.1-stable_linux.x86_64"
-          chmod +x "$godot_bin"
-          echo "GODOT_BIN=$godot_bin" >> "$GITHUB_ENV"
-
-          template_extract_dir="$RUNNER_TEMP/godot-4.7.1-templates"
-          template_destination="$HOME/.local/share/godot/export_templates/4.7.1.stable"
-          curl --fail --location --silent --show-error --output "$RUNNER_TEMP/templates.tpz" https://github.com/godotengine/godot/releases/download/4.7.1-stable/Godot_v4.7.1-stable_export_templates.tpz
-          unzip -q "$RUNNER_TEMP/templates.tpz" -d "$template_extract_dir"
-          mkdir -p "$template_destination"
-          cp -a "$template_extract_dir/templates/." "$template_destination/"
-          test -f "$template_destination/windows_debug_x86_64.exe"
-
-      - name: Verify tool versions
-        run: |
-          "$GODOT_BIN" --version
-          uv --version
-          uv run --project tools --locked python --version
-
-      - name: Bootstrap development tooling
-        run: uv run --project tools --locked godot-dev deps
+      # These gates need only the locked Python tool environment. Run them before
+      # downloading Godot so broken formatting/lint/Python tests fail cheaply.
       - name: Format check
         run: uv run --project tools --locked godot-dev format-check
       - name: Lint
         run: uv run --project tools --locked godot-dev lint
       - name: Python tests
         run: uv run --project tools --locked godot-dev test-python
+
+      - name: Restore pinned Godot editor
+        id: godot-editor-cache
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ~/.cache/godot/4.7.1
+          key: godot-editor-${{ runner.os }}-${{ runner.arch }}-4.7.1-v1
+
+      - name: Install pinned Godot editor on cache miss
+        if: steps.godot-editor-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          godot_dir="$HOME/.cache/godot/4.7.1"
+          mkdir -p "$godot_dir"
+          curl --fail --location --silent --show-error --output "$godot_dir/godot.zip" https://github.com/godotengine/godot/releases/download/4.7.1-stable/Godot_v4.7.1-stable_linux.x86_64.zip
+          unzip -q "$godot_dir/godot.zip" -d "$godot_dir"
+          rm "$godot_dir/godot.zip"
+          chmod +x "$godot_dir/Godot_v4.7.1-stable_linux.x86_64"
+
+      - name: Verify pinned Godot editor
+        shell: bash
+        run: |
+          godot_bin="$HOME/.cache/godot/4.7.1/Godot_v4.7.1-stable_linux.x86_64"
+          test -x "$godot_bin"
+          "$godot_bin" --version | grep -E '^4\.7\.1\.stable(\.|$)'
+          echo "GODOT_BIN=$godot_bin" >> "$GITHUB_ENV"
+          uv --version
+          uv run --project tools --locked python --version
+
+      - name: Restore manifest-pinned GUT dependency
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: addons/gut
+          key: gut-${{ runner.os }}-${{ hashFiles('dependencies.json') }}
+
+      # Cache hits are an optimization only: the canonical manifest/marker path
+      # still runs so dependencies.json remains the source of truth.
+      - name: Bootstrap development tooling
+        run: uv run --project tools --locked godot-dev deps
       - name: Godot project check
         run: uv run --project tools --locked godot-dev godot-check
       - name: Godot tests
@@ -62,13 +88,42 @@ jobs:
         run: uv run --project tools --locked godot-dev smoke
       - name: Loopback network smoke test
         run: uv run --project tools --locked godot-dev network-smoke
+
+      # Cross-export still runs on Linux. Templates are restored only after all
+      # regular validation succeeds, avoiding needless setup on earlier failures.
+      - name: Restore pinned Windows export templates
+        id: export-templates-cache
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ~/.local/share/godot/export_templates/4.7.1.stable
+          key: godot-export-templates-${{ runner.os }}-${{ runner.arch }}-4.7.1.stable-v1
+
+      - name: Install pinned Windows export templates on cache miss
+        if: steps.export-templates-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          template_destination="$HOME/.local/share/godot/export_templates/4.7.1.stable"
+          template_extract_dir="$(mktemp -d)"
+          archive="$(mktemp --suffix=.tpz)"
+          curl --fail --location --silent --show-error --output "$archive" https://github.com/godotengine/godot/releases/download/4.7.1-stable/Godot_v4.7.1-stable_export_templates.tpz
+          unzip -q "$archive" -d "$template_extract_dir"
+          mkdir -p "$template_destination"
+          cp -a "$template_extract_dir/templates/." "$template_destination/"
+          rm -rf "$template_extract_dir" "$archive"
+
+      - name: Verify Windows export templates
+        shell: bash
+        run: test -f "$HOME/.local/share/godot/export_templates/4.7.1.stable/windows_debug_x86_64.exe"
       - name: Windows export smoke test
         run: uv run --project tools --locked godot-dev export-windows
 
-      - name: Upload test report
-        if: always()
+      # Logs already establish successful validation. Keep failure diagnostics
+      # briefly without retaining successful-run artifacts or exported binaries.
+      - name: Upload failing test reports
+        if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: junit-reports
           path: reports/*.xml
           if-no-files-found: warn
+          retention-days: 7

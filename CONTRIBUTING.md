@@ -12,3 +12,9 @@ Install Godot **4.7.1 stable**, `uv`, and `just`; then run `just bootstrap` and 
 - Run `just check`; run `just export-windows` for release-facing changes. Network changes must also keep `just network-smoke` green.
 
 Avoid speculative frameworks, global event buses, ECS/DI systems, and empty extension points. This template intentionally excludes enemies, combat, quests, technology trees, and production content until a derived game has a concrete requirement.
+
+## CI policy
+
+Every pull request and every push to `main` runs the complete validation suite on the pinned Linux runner, including the Windows export smoke. Feature-branch pushes intentionally do not run a duplicate remote workflow once a PR exists. Newer runs for the same PR cancel stale ones; different PRs remain independent. Version- and manifest-keyed dependency caches reduce setup time, while canonical locked commands and dependency verification still run.
+
+Windows builds are validated from Linux but are not retained as normal PR artifacts. JUnit reports are retained briefly only when validation fails. Release/tag publishing is deliberately outside this workflow; consult current GitHub Actions billing and usage information when adapting the template for a private repository.

@@ -22,17 +22,22 @@ Requirements are Godot **4.7.1 stable** (standard GDScript build), `uv`, and `ju
 | Space | Jump |
 | Left mouse | Mine a nearby tile |
 | Right mouse | Place the selected placeable item |
+| Middle mouse | Remove a nearby background wall |
 | C | Craft a stone block when beside a workbench |
 | Q | Cycle the selected placeable inventory item |
 | K / L | Save / load `user://sandbox-save.json` |
 
 The initial weather is rain so the boundary is visible. `Q` cycles placeable items currently held. Workbenches and crafted stone blocks can both be placed and recovered; natural stone remains raw stone when mined. Rain uses a simple vertical shelter rule: a solid tile above blocks it, so rain is visible outside but not beneath roofs or terrain. The HUD is only a view of the domain inventory and weather; it does not own any gameplay state.
 
-`K` and `L` are deliberately ordinary keys so save/load works in Godot Editor embedded play mode. A successful save reports `Saved.` in the HUD and prints the resolved path for `user://sandbox-save.json` to Godot's output; use that path to inspect or deliberately corrupt a save before testing the load error message.
+`Q` also selects `item:stone_wall`; that item places a persistent non-colliding background wall, so it can share a cell with foreground terrain. Middle mouse deliberately removes only that background layer. `K` and `L` are deliberately ordinary keys so save/load works in Godot Editor embedded play mode. A successful save reports `Saved.` in the HUD and prints the resolved path for `user://sandbox-save.json` to Godot's output; use that path to inspect or deliberately corrupt a save before testing the load error message.
 
 ## Architecture
 
-`src/domain/` contains `RefCounted` state and deterministic rules independent of the scene tree: the finite chunk-aware `WorldState`, tile definitions, inventory, recipes, and weather. `src/game/` contains the host-authoritative actions. `src/presentation/` draws state and accepts input; it is never the authority. `src/persistence/` encodes an inspectable JSON save with an explicit format version. Pixel size is centralized in `WorldConfig.TILE_SIZE_PIXELS` (16), while world/chunk coordinates remain integer tile coordinates.
+`src/domain/` contains `RefCounted` state and deterministic rules independent of the scene tree: the finite chunk-aware, two-layer `WorldState`, tile definitions, inventory, recipes, and weather. `src/game/` contains the host-authoritative actions. `src/presentation/` draws state and accepts input; it is never the authority. `src/persistence/` encodes an inspectable JSON save with an explicit format version. Pixel size is centralized in `WorldConfig.TILE_SIZE_PIXELS` (16), while world/chunk coordinates remain integer tile coordinates.
+
+Presentation is project-owned data: `assets/tiles/placeholder_tiles.svg`, `resources/tiles/sandbox_tileset.tres`, and `resources/tiles/tile_presentations.tres`. The catalog maps semantic IDs to TileSet cells, then deterministically selects cosmetic variants from world seed, tile coordinate, semantic ID, and stable world-layer ID. Variants are not saved or networked; equivalent worlds reconstruct them locally. The bundled art is 16×16 placeholder content only. Derived projects may intentionally change tile size later through the centralized configuration and presentation pipeline rather than changing gameplay IDs.
+
+Background walls are persistent buildable sandbox cells behind foreground terrain; they are not scenic sky/cloud/dune backgrounds and have no physics or rain-shelter meaning. Scenic/parallax presentation remains a future presentation-only system.
 
 World generation uses the explicit seed, configuration, and a versioned deterministic generator. Chunk coordinates are a storage concern now and a future render/persistence/network partition seam; no streaming system is implied. See [docs/architecture.md](docs/architecture.md) and the ADRs for the fuller rationale.
 

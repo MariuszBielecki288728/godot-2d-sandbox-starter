@@ -8,10 +8,14 @@ func host_handle(packet: PackedByteArray, authority: SandboxAuthority) -> Dictio
 	if not bool(message.get("ok", false)) or message.get("type") != &"mine":
 		return {"ok": false}
 	var target: Vector2i = message["target"]
-	var result := authority.mine(message["player"], target)
+	var layer: StringName = message["layer"]
+	var result := authority.mine_in_layer(layer, message["player"], target)
 	if not result.succeeded:
 		return {"ok": false}
-	return {"ok": true, "packet": codec.tile_update(target, authority.world.get_tile(target))}
+	return {
+		"ok": true,
+		"packet": codec.tile_update(target, authority.world.get_tile_in_layer(layer, target), layer)
+	}
 
 
 func client_apply(packet: PackedByteArray, world: WorldState) -> bool:
@@ -19,4 +23,4 @@ func client_apply(packet: PackedByteArray, world: WorldState) -> bool:
 	var message: Dictionary = codec.decode(packet)
 	if not bool(message.get("ok", false)) or message.get("type") != &"tile_update":
 		return false
-	return world.set_tile(message["position"], message["id"])
+	return world.set_tile_in_layer(message["layer"], message["position"], message["id"])

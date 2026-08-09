@@ -5,6 +5,7 @@ func test_save_round_trip_preserves_world_inventory_and_weather() -> void:
 	var world := WorldGenerator.new().generate(WorldConfig.new(16, 16), 9)
 	world.set_tile(Vector2i(1, 1), TileCatalog.WORKBENCH)
 	world.set_tile(Vector2i(2, 1), TileCatalog.STONE_BLOCK)
+	world.set_background_tile(Vector2i(2, 1), TileCatalog.STONE_WALL)
 	var inventory := Inventory.new()
 	inventory.add(TileCatalog.ITEM_STONE, 3)
 	var authority := SandboxAuthority.new(world, inventory, WeatherState.new(WeatherState.RAIN))
@@ -16,6 +17,7 @@ func test_save_round_trip_preserves_world_inventory_and_weather() -> void:
 	assert_eq(restored.world.seed, 9)
 	assert_eq(restored.world.get_tile(Vector2i(1, 1)), TileCatalog.WORKBENCH)
 	assert_eq(restored.world.get_tile(Vector2i(2, 1)), TileCatalog.STONE_BLOCK)
+	assert_eq(restored.world.get_background_tile(Vector2i(2, 1)), TileCatalog.STONE_WALL)
 	assert_eq(restored.inventory.count(TileCatalog.ITEM_STONE), 3)
 	assert_eq(restored.weather.kind, WeatherState.RAIN)
 
@@ -53,6 +55,22 @@ func test_semantically_invalid_saves_are_rejected_before_state_construction() ->
 	var unknown_weather := _valid_save_data()
 	unknown_weather["weather"]["kind"] = "weather:acid_rain"
 	cases.append(unknown_weather)
+	var wrong_layer_tile := _valid_save_data()
+	wrong_layer_tile["world"]["tiles"] = [
+		{"layer": "world_layer:background", "x": 2, "y": 2, "id": "tile:dirt"}
+	]
+	cases.append(wrong_layer_tile)
+	var unknown_layer := _valid_save_data()
+	unknown_layer["world"]["tiles"] = [
+		{"layer": "world_layer:nope", "x": 2, "y": 2, "id": "tile:dirt"}
+	]
+	cases.append(unknown_layer)
+	var duplicate_layer_coordinate := _valid_save_data()
+	duplicate_layer_coordinate["world"]["tiles"] = [
+		{"layer": "world_layer:foreground", "x": 2, "y": 2, "id": "tile:dirt"},
+		{"layer": "world_layer:foreground", "x": 2, "y": 2, "id": "tile:stone"}
+	]
+	cases.append(duplicate_layer_coordinate)
 
 	for data: Dictionary in cases:
 		var decoded := SaveStore.decode(JSON.stringify(data))
