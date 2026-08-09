@@ -90,14 +90,15 @@ func test_multiplayer_codec_rejects_malformed_messages() -> void:
 	var codec := TileActionCodec.new()
 	assert_false(codec.decode("not json".to_utf8_buffer())["ok"])
 	assert_false(codec.decode('{"type":"mine","target":{}}'.to_utf8_buffer())["ok"])
-	assert_false(
+	assert_false(codec.decode('{"type":"mine","target":{"x":"2","y":1}}'.to_utf8_buffer())["ok"])
+	var legacy_packet := (
 		(
-			codec
-			. decode(
-				'{"type":"mine","player":{"x":"1","y":1},"target":{"x":2,"y":1}}'.to_utf8_buffer()
-			)["ok"]
+			'{"type":"mine","layer":"world_layer:foreground",'
+			+ '"player":{"x":1,"y":1},"target":{"x":2,"y":1}}'
 		)
+		. to_utf8_buffer()
 	)
+	assert_false(codec.decode(legacy_packet)["ok"])
 	assert_false(codec.decode('{"type":"unknown"}'.to_utf8_buffer())["ok"])
 	assert_false(
 		(
@@ -111,15 +112,12 @@ func test_multiplayer_codec_rejects_malformed_messages() -> void:
 
 func test_multiplayer_codec_round_trips_supported_messages() -> void:
 	var codec := TileActionCodec.new()
-	var mine := codec.decode(codec.mine_intent(Vector2i(1, 2), Vector2i(3, 4)))
+	var mine := codec.decode(codec.mine_intent(Vector2i(3, 4)))
 	var update := codec.decode(codec.tile_update(Vector2i(3, 4), TileCatalog.DIRT))
-	var background_mine := codec.decode(
-		codec.mine_intent(Vector2i(1, 2), Vector2i(3, 4), WorldLayer.BACKGROUND)
-	)
+	var background_mine := codec.decode(codec.mine_intent(Vector2i(3, 4), WorldLayer.BACKGROUND))
 
 	assert_true(mine["ok"])
 	assert_eq(mine["type"], &"mine")
-	assert_eq(mine["player"], Vector2i(1, 2))
 	assert_eq(mine["target"], Vector2i(3, 4))
 	assert_true(update["ok"])
 	assert_eq(update["type"], &"tile_update")
@@ -135,8 +133,12 @@ func test_invalid_network_message_does_not_mutate_authority_state() -> void:
 	var inventory := Inventory.new()
 	var authority := SandboxAuthority.new(world, inventory, WeatherState.new())
 	var response := AuthoritativeTileTransport.new().host_handle(
-		'{"type":"mine","player":{"x":1,"y":1},"target":{"x":"2","y":1}}'.to_utf8_buffer(),
-		authority
+		(
+			'{"type":"mine","layer":"world_layer:foreground","target":{"x":"2","y":1}}'
+			. to_utf8_buffer()
+		),
+		authority,
+		Vector2i(1, 1)
 	)
 
 	assert_false(response["ok"])
@@ -232,17 +234,44 @@ func test_invalid_network_layer_is_rejected_without_mutation() -> void:
 	var target := Vector2i(2, 1)
 	world.set_background_tile(target, TileCatalog.STONE_WALL)
 	var authority := SandboxAuthority.new(world, Inventory.new(), WeatherState.new())
-	var response := (
-		AuthoritativeTileTransport
-		. new()
-		. host_handle(
-			(
-				'{"type":"mine","layer":"world_layer:nope","player":{"x":1,"y":1},"target":{"x":2,"y":1}}'
-				. to_utf8_buffer()
-			),
-			authority
-		)
+	var response := AuthoritativeTileTransport.new().host_handle(
+		'{"type":"mine","layer":"world_layer:nope","target":{"x":2,"y":1}}'.to_utf8_buffer(),
+		authority,
+		Vector2i(1, 1)
 	)
 
 	assert_false(response["ok"])
 	assert_eq(world.get_background_tile(target), TileCatalog.STONE_WALL)
+
+
+func test_network_mining_uses_host_owned_player_position_for_reach() -> void:
+	var world := WorldState.new(WorldConfig.new(64, 64))
+	var target := Vector2i(50, 50)
+	world.set_tile(target, TileCatalog.DIRT)
+	var inventory := Inventory.new()
+	var authority := SandboxAuthority.new(world, inventory, WeatherState.new())
+	var packet := TileActionCodec.new().mine_intent(target)
+
+	var response := AuthoritativeTileTransport.new().host_handle(packet, authority, Vector2i(1, 1))
+
+	assert_false(response["ok"])
+	assert_eq(world.get_tile(target), TileCatalog.DIRT)
+	assert_eq(inventory.count(TileCatalog.ITEM_DIRT), 0)
+
+
+func test_network_mining_accepts_a_nearby_target_from_host_owned_position() -> void:
+	var world := WorldState.new(WorldConfig.new(8, 8))
+	var target := Vector2i(2, 1)
+	world.set_tile(target, TileCatalog.DIRT)
+	var authority := SandboxAuthority.new(world, Inventory.new(), WeatherState.new())
+
+	var response := AuthoritativeTileTransport.new().host_handle(
+		TileActionCodec.new().mine_intent(target), authority, Vector2i(1, 1)
+	)
+
+	assert_true(response["ok"])
+	assert_eq(authority.world.get_tile(target), TileCatalog.AIR)
+	var update := TileActionCodec.new().decode(response["packet"])
+	assert_true(update["ok"])
+	assert_eq(update["type"], &"tile_update")
+	assert_eq(update["position"], target)

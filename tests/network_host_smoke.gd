@@ -2,6 +2,7 @@ extends SceneTree
 
 const PORT: int = 39137
 const TARGET: Vector2i = Vector2i(2, 1)
+const AUTHORITATIVE_PLAYER_TILE: Vector2i = Vector2i(1, 1)
 const ACK_TEXT: String = "ack"
 
 var _peer: ENetMultiplayerPeer
@@ -34,7 +35,7 @@ func _serve() -> void:
 			):
 				quit(0)
 				return
-			var response := _transport.host_handle(packet, _authority)
+			var response := _transport.host_handle(packet, _authority, AUTHORITATIVE_PLAYER_TILE)
 			if bool(response.get("ok", false)):
 				_peer.set_target_peer(sender)
 				_peer.put_packet(response["packet"])

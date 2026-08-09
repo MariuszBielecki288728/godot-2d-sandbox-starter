@@ -2,14 +2,16 @@ class_name AuthoritativeTileTransport
 extends RefCounted
 
 
-func host_handle(packet: PackedByteArray, authority: SandboxAuthority) -> Dictionary:
+func host_handle(
+	packet: PackedByteArray, authority: SandboxAuthority, authoritative_player_tile: Vector2i
+) -> Dictionary:
 	var codec := TileActionCodec.new()
 	var message: Dictionary = codec.decode(packet)
 	if not bool(message.get("ok", false)) or message.get("type") != &"mine":
 		return {"ok": false}
 	var target: Vector2i = message["target"]
 	var layer: StringName = message["layer"]
-	var result := authority.mine_in_layer(layer, message["player"], target)
+	var result := authority.mine_in_layer(layer, authoritative_player_tile, target)
 	if not result.succeeded:
 		return {"ok": false}
 	return {

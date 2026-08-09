@@ -30,14 +30,12 @@ func _connect() -> void:
 			_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED
 			and not _sent_request
 		):
-			_peer.put_packet(_codec.mine_intent(Vector2i(1, 1), TARGET))
+			_peer.put_packet(_codec.mine_intent(TARGET))
 			_sent_request = true
 		if _peer.get_available_packet_count() > 0:
 			if _transport.client_apply(_peer.get_packet(), _world):
 				if _world.get_tile(TARGET) == TileCatalog.AIR and not _sent_background_request:
-					_peer.put_packet(
-						_codec.mine_intent(Vector2i(1, 1), TARGET, WorldLayer.BACKGROUND)
-					)
+					_peer.put_packet(_codec.mine_intent(TARGET, WorldLayer.BACKGROUND))
 					_sent_background_request = true
 				elif (
 					_world.get_tile(TARGET) == TileCatalog.AIR

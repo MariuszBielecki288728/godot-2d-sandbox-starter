@@ -8,6 +8,8 @@ Presentation is project-owned data: `assets/tiles/placeholder_tiles.svg`, `resou
 
 `SandboxAuthority` is the narrow application boundary for mine, place, and craft operations. It checks bounds, reach, tile rules, available inventory, and station capability before making an atomic mutation. Item behavior chooses a layer (`item:stone_wall` places only a background wall); background removal is an explicit layer-aware operation. A local player calls that same authority. A multiplayer client sends an intent to the host; the host applies the authority operation and replicates its result.
 
+Semantic solidity belongs to `TileCatalog`. The TileSet is a visual/physics projection: `TilePresentationCatalog.validate()` requires every mapped visual variant to have effective collision exactly when its semantic tile is solid. An effective collider has a polygon of at least three points on a TileSet physics layer with a nonzero collision layer. Thus foreground solid variants must collide, while background wall variants must remain collision-free; this configuration check complements the scene-level collision-boundary tests.
+
 ## World and generation
 
 `WorldConfig` owns dimensions, chunk size (16), and the current 16px starter render scale. `WorldGenerator` uses explicit seed/configuration and versioned coordinate-derived values, so generation is repeatable regardless of unrelated runtime randomness. It generates only foreground terrain; new worlds begin with empty background walls. The small playable world is fully resident; chunking is a future finite-world storage/render/synchronization seam, not streaming.
@@ -20,6 +22,6 @@ Background walls are persistent buildable sandbox cells behind foreground terrai
 
 `WorldState.is_exposed_to_sky(tile)` applies the starter shelter rule using foreground solid tiles only. `WeatherView` observes foreground mutations, reconnects when a loaded world replaces the old one, and invalidates when the canvas transform changes. It remains screen-space presentation and owns no physics.
 
-Layer-aware ENet intents and authoritative tile updates carry stable semantic layer IDs. The two-process smoke converges a foreground mutation and a background mutation using the same production codec and transport adapter. This is a transport proof, not lockstep, matchmaking, or Internet multiplayer.
+Layer-aware ENet intents and authoritative tile updates carry stable semantic layer IDs. A client mine intent contains only action, layer, and target; it never supplies a trusted player position or another authority input used to validate its own action. The host/session identifies the sender, resolves host-owned player state, and supplies that position to the transport, which calls `SandboxAuthority` for reach and gameplay validation. The two-process ENet smoke uses a fixed host-owned player tile because player replication is deliberately out of scope, while still converging foreground and background mutations through the production codec and transport adapter. This is a transport proof, not lockstep, matchmaking, or Internet multiplayer.
 
 Future adjacency-aware/autotile art belongs behind the presentation resolver, so it can inspect neighbors without changing semantic state, saves, networking, or gameplay. Large props and scenic environments remain separate future systems.
